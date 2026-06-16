@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Portal & Live Monitor - LAZ Al Azhar</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome & Google Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              500: '#1e3a8a', /* Premium Navy */
+              600: '#2563eb', /* Royal Blue */
+              700: '#1d4ed8',
+              900: '#0f172a', /* Dark Slate */
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* Animations */
+    .fade-in {
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .pulse-amber {
+      animation: pulseAmber 2s infinite;
+    }
+    @keyframes pulseAmber {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+    }
+
+    .pulse-glow-blue {
+      animation: pulseGlowBlue 2.5s infinite;
+    }
+    @keyframes pulseGlowBlue {
+      0%, 100% { box-shadow: 0 0 15px -3px rgba(37, 99, 235, 0.3); }
+      50% { box-shadow: 0 0 25px 2px rgba(37, 99, 235, 0.6); }
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-800 h-screen flex flex-col font-sans antialiased overflow-hidden">
+
+  <!-- TOP BRANDING & CLOCK BAR -->
+  <header class="bg-white border-b border-slate-100 shrink-0 shadow-sm z-40">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo Left -->
+      <div class="flex items-center space-x-3">
+        <div class="bg-brand-500 text-white p-2.5 rounded-2xl shadow-md flex items-center justify-center pulse-glow-blue">
+          <i class="fas fa-ticket-alt text-lg"></i>
+        </div>
+        <div>
+          <span class="text-[10px] font-extrabold text-brand-600 uppercase tracking-widest block">Halo APU</span>
+          <h1 class="text-sm font-extrabold text-slate-900 leading-tight">Dashboard Pemohon LAZ Al Azhar</h1>
+        </div>
+      </div>
+
+      <!-- Live Digital Clock & Calendar Widget -->
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3 bg-brand-50 border border-brand-100 rounded-2xl px-4 py-2">
+          <div class="bg-brand-600 text-white p-2 rounded-xl h-8 w-8 flex items-center justify-center">
+            <i class="fas fa-clock text-xs"></i>
+          </div>
+          <div>
+            <span id="liveClockUser" class="block text-sm font-extrabold text-brand-900 tracking-tight">00:00:00</span>
+            <span id="liveDateUser" class="block text-[9px] text-brand-600 font-bold uppercase tracking-wider">KAMIS, 10 JUNI 2026</span>
+          </div>
+        </div>
+
+        <!-- Tombol Kembali ke Portal -->
+        <a href="<?= execUrl ?>" id="btnBackToPortal" target="_top" class="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-3 sm:px-4 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 text-xs font-bold no-underline">
+          <i class="fas fa-arrow-left text-[10px]"></i>
+          <span class="hidden sm:inline">Kembali ke Portal</span>
+          <span class="inline sm:hidden">Kembali</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col space-y-4 overflow-hidden">
+
+    <!-- METRIC STATS ROW -->
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 shrink-0 fade-in">
+      <!-- Total Tiket (Blue) -->
+      <div class="bg-[#2563EB] text-white p-3 rounded-2xl shadow-sm space-y-1.5 relative overflow-hidden group hover:scale-[1.02] transition duration-200">
+        <div class="absolute -right-3 -top-3 w-12 h-12 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition duration-300"></div>
+        <div class="flex justify-between items-start">
+          <span class="text-[9px] font-bold text-white/80 uppercase tracking-widest block">Total Tiket</span>
+          <i class="fas fa-layer-group text-white/30 text-base"></i>
+        </div>
+        <span id="metricTotal" class="text-2xl font-black block">9</span>
+        <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
+          <div id="barTotal" class="bg-white h-full" style="width: 100%"></div>
+        </div>
+        <span class="text-[9px] text-white/70 block">100% dari total pengajuan</span>
+      </div>
+
+      <!-- Tiket Open (Orange) -->
+      <div class="bg-[#F59E0B] text-white p-3 rounded-2xl shadow-sm space-y-1.5 relative overflow-hidden group hover:scale-[1.02] transition duration-200">
+        <div class="absolute -right-3 -top-3 w-12 h-12 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition duration-300"></div>
+        <div class="flex justify-between items-start">
+          <span class="text-[9px] font-bold text-white/80 uppercase tracking-widest block">Tiket Open</span>
+          <i class="fas fa-envelope-open text-white/30 text-base"></i>
+        </div>
+        <span id="metricOpen" class="text-2xl font-black block">5</span>
+        <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
+          <div id="barOpen" class="bg-white h-full" style="width: 56%"></div>
+        </div>
+        <span id="lblOpenPercent" class="text-[9px] text-white/70 block">56% dari total</span>
+      </div>
+
+      <!-- On Proses (Light Blue) -->
+      <div class="bg-[#0EA5E9] text-white p-3 rounded-2xl shadow-sm space-y-1.5 relative overflow-hidden group hover:scale-[1.02] transition duration-200">
+        <div class="absolute -right-3 -top-3 w-12 h-12 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition duration-300"></div>
+        <div class="flex justify-between items-start">
+          <span class="text-[9px] font-bold text-white/80 uppercase tracking-widest block">On Proses</span>
+          <i class="fas fa-spinner text-white/30 text-base animate-spin" style="animation-duration: 4s;"></i>
+        </div>
+        <span id="metricProcess" class="text-2xl font-black block">2</span>
+        <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
+          <div id="barProcess" class="bg-white h-full" style="width: 22%"></div>
+        </div>
+        <span id="lblProcessPercent" class="text-[9px] text-white/70 block">22% dari total</span>
+      </div>
+
+      <!-- Pending (Dark Slate) -->
+      <div class="bg-[#334155] text-white p-3 rounded-2xl shadow-sm space-y-1.5 relative overflow-hidden group hover:scale-[1.02] transition duration-200">
+        <div class="absolute -right-3 -top-3 w-12 h-12 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition duration-300"></div>
+        <div class="flex justify-between items-start">
+          <span class="text-[9px] font-bold text-white/80 uppercase tracking-widest block">Pending</span>
+          <i class="fas fa-history text-white/30 text-base"></i>
+        </div>
+        <span id="metricPending" class="text-2xl font-black block">0</span>
+        <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
+          <div id="barPending" class="bg-white h-full" style="width: 0%"></div>
+        </div>
+        <span id="lblPendingPercent" class="text-[9px] text-white/70 block">0% dari total</span>
+      </div>
+
+      <!-- Selesai (Green) -->
+      <div class="bg-[#10B981] text-white p-3 rounded-2xl shadow-sm space-y-1.5 relative overflow-hidden group hover:scale-[1.02] transition duration-200">
+        <div class="absolute -right-3 -top-3 w-12 h-12 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition duration-300"></div>
+        <div class="flex justify-between items-start">
+          <span class="text-[9px] font-bold text-white/80 uppercase tracking-widest block">Selesai</span>
+          <i class="fas fa-check-circle text-white/30 text-base"></i>
+        </div>
+        <span id="metricSolved" class="text-2xl font-black block">1</span>
+        <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
+          <div id="barSolved" class="bg-white h-full" style="width: 11%"></div>
+        </div>
+        <span id="lblSolvedPercent" class="text-[9px] text-white/70 block">11% dari total</span>
+      </div>
+
+      <!-- Ditolak (Red) -->
+      <div class="bg-[#EF4444] text-white p-3 rounded-2xl shadow-sm space-y-1.5 relative overflow-hidden group hover:scale-[1.02] transition duration-200">
+        <div class="absolute -right-3 -top-3 w-12 h-12 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition duration-300"></div>
+        <div class="flex justify-between items-start">
+          <span class="text-[9px] font-bold text-white/80 uppercase tracking-widest block">Ditolak</span>
+          <i class="fas fa-times-circle text-white/30 text-base"></i>
+        </div>
+        <span id="metricRejected" class="text-2xl font-black block">1</span>
+        <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
+          <div id="barRejected" class="bg-white h-full" style="width: 11%"></div>
+        </div>
+        <span id="lblRejectedPercent" class="text-[9px] text-white/70 block">11% dari total</span>
+      </div>
+    </div>
+
+    <!-- MAIN GRID SECTION -->
+    <div class="flex-grow min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-4 fade-in">
+      
+      <!-- LEFT WORKSPACE: LIVE TICKET TABLE / REGISTERED USERS AREA (DYNAMICS SWAP) -->
+      <div class="xl:col-span-8 h-full flex flex-col min-h-0">
+        
+        <!-- Tab view 1: Tiket Masuk -->
+        <div id="ticketsWorkspace" class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col h-full min-h-0 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Tiket Terbaru Masuk</h3>
+              <p class="text-xs text-slate-400 mt-1">Data sinkronisasi live real-time dengan pusat database</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <!-- Auto-refresh countdown -->
+              <div class="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-[10px] font-bold text-emerald-700">Auto-refresh: <span id="refreshCountdown">15</span>s</span>
+              </div>
+              <!-- Manual Refresh Button -->
+              <button id="btnManualRefresh" onclick="manualRefresh()" class="bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-600 px-3 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 text-xs font-bold">
+                <i id="refreshIcon" class="fas fa-sync-alt text-[10px]"></i>
+                <span class="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="relative w-full sm:w-64">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <i class="fas fa-search text-xs"></i>
+              </span>
+              <input type="text" id="ticketSearch" oninput="filterTicketsTable()" placeholder="Cari tiket..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-600 bg-slate-50 transition">
+            </div>
+          </div>
+
+          <!-- Scrollable Table -->
+          <div class="flex-grow min-h-0 overflow-y-auto overflow-x-auto h-full">
+            <table class="w-full text-left border-collapse table-fixed h-full">
+              <thead>
+                <tr class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  <th class="pb-3 text-center w-32">ID Tiket</th>
+                  <th class="pb-3">Pemohon & Detail Layanan</th>
+                  <th class="pb-3 text-center w-36">Status</th>
+                  <th class="pb-3 text-center w-40">Tanggal</th>
+                </tr>
+              </thead>
+              <tbody id="userTicketTableBody" class="divide-y divide-slate-50 text-xs text-slate-600">
+                <!-- Rendered Dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination / Slide Controls -->
+          <div id="ticketPagination" class="flex items-center justify-between pt-4 border-t border-slate-100 text-xs mt-3">
+            <div class="text-slate-400 font-semibold" id="ticketPageIndicator">
+              Menampilkan 0-0 dari 0 tiket
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="prevTicketPage()" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg transition font-bold disabled:opacity-50" id="btnPrevPage">
+                <i class="fas fa-chevron-left mr-1"></i> Prev
+              </button>
+              <button onclick="nextTicketPage()" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg transition font-bold disabled:opacity-50" id="btnNextPage">
+                Next <i class="fas fa-chevron-right ml-1"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab view 2: Data Pemohon (Requesters) -->
+        <div id="requestersWorkspace" class="hidden bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col h-full min-h-0 space-y-3 fade-in">
+          
+          <!-- Banner Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Data Pemohon (Requesters)</h3>
+              <p class="text-xs text-slate-400 mt-1">Informasi statistik seluruh klien/user yang mengajukan tiket</p>
+            </div>
+            
+            <!-- Search User Bar -->
+            <div class="relative w-full sm:w-64">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <i class="fas fa-search text-xs"></i>
+              </span>
+              <input type="text" id="userSearch" oninput="filterRequestersTable()" placeholder="Cari nama pemohon..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-600 bg-slate-50 transition">
+            </div>
+          </div>
+
+          <!-- Highlights: Pemohon Teraktif -->
+          <div class="bg-gradient-to-r from-brand-900 to-indigo-950 p-5 rounded-2xl text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center space-x-4">
+              <div class="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-xl text-yellow-400">
+                <i class="fas fa-trophy animate-bounce"></i>
+              </div>
+              <div>
+                <span class="text-[10px] font-extrabold text-brand-100/70 uppercase tracking-widest block">Pemohon Teraktif</span>
+                <span id="topRequesterName" class="text-base font-black tracking-tight block">Memuat...</span>
+              </div>
+            </div>
+            <div class="bg-white/10 px-4 py-2 rounded-xl text-right">
+              <span id="topRequesterCount" class="text-lg font-black block">0 Req</span>
+              <span class="text-[10px] text-brand-100/70 uppercase font-bold tracking-wider block">Total Pengajuan</span>
+            </div>
+          </div>
+
+          <!-- Requesters Table (Sesuai image_fd2063.png) -->
+          <div class="flex-grow min-h-0 overflow-y-auto overflow-x-auto h-full">
+            <table class="w-full text-left border-collapse table-fixed h-full">
+              <thead>
+                <tr class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  <th class="pb-3 pl-4">Nama Klien / User</th>
+                  <th class="pb-3">WhatsApp / Email</th>
+                  <th class="pb-3 text-center">Total Request</th>
+                  <th class="pb-3 text-center">Terakhir Aktif</th>
+                </tr>
+              </thead>
+              <tbody id="requestersTableBody" class="divide-y divide-slate-50 text-xs text-slate-700">
+                <!-- Rendered Dynamically from JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT WORKSPACE: PROGRESS & WIDGET DETAILS -->
+      <div class="xl:col-span-4 h-full flex flex-col min-h-0 space-y-4">
+        
+        <!-- Summary Dashboard Status Box (Buat Tiket Baru dihapus sesuai request) -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-3">
+          <h3 class="text-base font-extrabold text-slate-900">Ringkasan Status</h3>
+          
+          <!-- Circular Progress Indicator -->
+          <div class="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div class="relative flex items-center justify-center h-14 w-14 shrink-0">
+              <!-- Progress Ring Circle (SVG) -->
+              <svg class="h-full w-full transform -rotate-90">
+                <circle class="text-slate-200" stroke-width="5" stroke="currentColor" fill="transparent" r="22" cx="28" cy="28"/>
+                <circle id="circularProgressRing" class="text-brand-600 transition-all duration-500 ease-out" stroke-width="5" stroke-linecap="round" stroke-dasharray="138" stroke-dashoffset="120" stroke="currentColor" fill="transparent" r="22" cx="28" cy="28"/>
+              </svg>
+              <span id="circularProgressText" class="absolute text-[10px] font-black text-slate-800">11%</span>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-900">Tingkat Penyelesaian</h4>
+              <p class="text-[9px] text-slate-400 mt-0.5 leading-relaxed">Persentase tiket Anda yang sudah selesai ditindaklanjuti.</p>
+            </div>
+          </div>
+
+          <!-- Dynamic Bar Statuses -->
+          <div class="space-y-3.5">
+            <!-- Open Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-500 flex items-center"><span class="h-2 w-2 rounded-full bg-amber-500 mr-2"></span>Open</span>
+                <span id="barCountOpen" class="font-extrabold text-slate-900">5</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div id="barWidthOpen" class="bg-amber-500 h-full rounded-full" style="width: 56%"></div>
+              </div>
+            </div>
+
+            <!-- On Proses Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-500 flex items-center"><span class="h-2 w-2 rounded-full bg-sky-500 mr-2"></span>On Proses</span>
+                <span id="barCountProcess" class="font-extrabold text-slate-900">2</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div id="barWidthProcess" class="bg-[#0EA5E9] h-full rounded-full" style="width: 22%"></div>
+              </div>
+            </div>
+
+            <!-- Pending Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-500 flex items-center"><span class="h-2 w-2 rounded-full bg-slate-500 mr-2"></span>Pending</span>
+                <span id="barCountPending" class="font-extrabold text-slate-900">0</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div id="barWidthPending" class="bg-[#334155] h-full rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Distribution Widget -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-3 flex-grow flex flex-col justify-between min-h-0">
+          <h4 class="text-sm font-extrabold text-slate-900 flex items-center"><i class="fas fa-chart-pie text-brand-600 mr-2"></i> Distribusi Layanan Anda</h4>
+          <div class="space-y-2 text-xs overflow-y-auto min-h-0" id="distributionContainer">
+            <!-- Rendered Dynamically -->
+          </div>
+
+          <!-- REQ BUTTON: LIHAT DATA PEMOHON / TICKET VIEW TOGGLER (Sesuai Request) -->
+          <div class="pt-3 border-t border-slate-100">
+            <button id="toggleWorkspaceBtn" onclick="toggleMainWorkspace()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-extrabold py-2.5 rounded-xl shadow-lg shadow-brand-500/15 hover:shadow-brand-500/25 transition-all duration-200 text-xs flex items-center justify-center space-x-2">
+              <i id="toggleWorkspaceIcon" class="fas fa-users"></i>
+              <span id="toggleWorkspaceText">Lihat Data Pemohon</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-100 py-3 shrink-0 mt-auto">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+        &copy; 2026 LAZ Al Azhar. All Rights Reserved.
+      </p>
+      <div class="flex items-center space-x-4">
+         <a href="https://www.instagram.com/gbrnmewing" target="_top" class="text-xs font-bold text-brand-600 hover:text-brand-700 transition flex items-center space-x-1">
+          <i class="fas fa-tv text-[10px]"></i>
+          <span>Kontak Developer</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CORE SCRIPT INJECTIONS -->
+  <script>
+    let activeUser = "Monitor";
+    let ticketsDatabase = [];
+    let globalPortalUrl = "<?= execUrl ?>";
+
+    // Current Active Workspace View: 'tickets' or 'requesters'
+    let currentWorkspace = 'tickets';
+
+    // Pagination & Auto-slide variables
+    let currentTicketPage = 0;
+    const ticketsPerPage = 10;
+    let autoSlideInterval = null;
+
+    // Real-Time Clock & Calendar
+    function initRealTimeClock() {
+      const liveClock = document.getElementById('liveClockUser');
+      const liveDate = document.getElementById('liveDateUser');
+      const weekdays = ["MINGGU", "SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
+      const months = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+
+      setInterval(() => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        if (liveClock) liveClock.innerText = `${hours}:${minutes}:${seconds}`;
+
+        const dayName = weekdays[now.getDay()];
+        const dayNum = now.getDate();
+        const monthName = months[now.getMonth()];
+        const year = now.getFullYear();
+        if (liveDate) liveDate.innerText = `${dayName}, ${dayNum} ${monthName} ${year}`;
+      }, 1000);
+    }
+
+    // Dynamic Render Engine for Dashboard Metrics & Charts
+    function renderDashboardStats() {
+      const total = ticketsDatabase.length;
+      const countOpen = ticketsDatabase.filter(t => t.status === "Open").length;
+      const countProcess = ticketsDatabase.filter(t => t.status === "On Proses").length;
+      const countPending = ticketsDatabase.filter(t => t.status === "Pending").length;
+      const countSolved = ticketsDatabase.filter(t => t.status === "Solved").length;
+      const countRejected = ticketsDatabase.filter(t => t.status === "Reject").length;
+
+
+
+      // Update Metric Values
+      document.getElementById('metricTotal').innerText = total;
+      document.getElementById('metricOpen').innerText = countOpen;
+      document.getElementById('metricProcess').innerText = countProcess;
+      document.getElementById('metricPending').innerText = countPending;
+      document.getElementById('metricSolved').innerText = countSolved;
+      document.getElementById('metricRejected').innerText = countRejected;
+
+      // Update Sub-percent Bar Labels
+      document.getElementById('lblOpenPercent').innerText = `${Math.round((countOpen/total)*100 || 0)}% dari total`;
+      document.getElementById('lblProcessPercent').innerText = `${Math.round((countProcess/total)*100 || 0)}% dari total`;
+      document.getElementById('lblPendingPercent').innerText = `${Math.round((countPending/total)*100 || 0)}% dari total`;
+      document.getElementById('lblSolvedPercent').innerText = `${Math.round((countSolved/total)*100 || 0)}% dari total`;
+      document.getElementById('lblRejectedPercent').innerText = `${Math.round((countRejected/total)*100 || 0)}% dari total`;
+
+      // Adjust Indicator Widths
+      document.getElementById('barOpen').style.width = `${(countOpen/total)*100 || 0}%`;
+      document.getElementById('barProcess').style.width = `${(countProcess/total)*100 || 0}%`;
+      document.getElementById('barPending').style.width = `${(countPending/total)*100 || 0}%`;
+      document.getElementById('barSolved').style.width = `${(countSolved/total)*100 || 0}%`;
+      document.getElementById('barRejected').style.width = `${(countRejected/total)*100 || 0}%`;
+
+      // Right Widget Bar Counters update
+      document.getElementById('barCountOpen').innerText = countOpen;
+      document.getElementById('barWidthOpen').style.width = `${(countOpen/total)*100 || 0}%`;
+      document.getElementById('barCountProcess').innerText = countProcess;
+      document.getElementById('barWidthProcess').style.width = `${(countProcess/total)*100 || 0}%`;
+      document.getElementById('barCountPending').innerText = countPending;
+      document.getElementById('barWidthPending').style.width = `${(countPending/total)*100 || 0}%`;
+
+      // Update Circular Progress Ring
+      const solvedPercent = Math.round((countSolved/total)*100 || 0);
+      document.getElementById('circularProgressText').innerText = `${solvedPercent}%`;
+      
+      // Calculate Dashoffset: Max stroke-dasharray is 138 (calculated via circumference)
+      const ring = document.getElementById('circularProgressRing');
+      const circumference = 138;
+      const offset = circumference - (solvedPercent / 100) * circumference;
+      ring.style.strokeDashoffset = offset;
+
+      // Render Service Distribution Details
+      renderDistribution(ticketsDatabase);
+    }
+
+    // Render Service Distribution Widget
+    function renderDistribution(db) {
+      const container = document.getElementById('distributionContainer');
+      const map = {};
+      db.forEach(t => {
+        map[t.departemen] = (map[t.departemen] || 0) + 1;
+      });
+
+      container.innerHTML = '';
+      const styles = {
+        "IT Support": "bg-blue-100 text-blue-700",
+        "General Affair": "bg-indigo-100 text-indigo-700",
+        "Humas": "bg-amber-100 text-amber-700"
+      };
+
+      Object.keys(map).forEach(key => {
+        const badgeColor = styles[key] || "bg-slate-100 text-slate-700";
+        container.innerHTML += `
+          <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg border border-slate-100">
+            <span class="font-semibold text-slate-500">${key}</span>
+            <span class="${badgeColor} font-extrabold px-2 py-0.5 rounded-md text-[11px]">${map[key]} Tiket</span>
+          </div>
+        `;
+      });
+    }
+
+    // Render Dynamic Ticket Rows in Table
+    function renderTicketTable(data) {
+      const tbody = document.getElementById('userTicketTableBody');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-8 text-slate-400">
+              <i class="fas fa-ticket-alt text-3xl mb-2 opacity-30 block"></i>
+              Tidak ada riwayat pengajuan tiket.
+            </td>
+          </tr>
+        `;
+        document.getElementById('ticketPageIndicator').innerText = 'Menampilkan 0-0 dari 0 tiket';
+        document.getElementById('btnPrevPage').disabled = true;
+        document.getElementById('btnNextPage').disabled = true;
+        return;
+      }
+
+      // Pagination bounds check
+      const totalPages = Math.ceil(data.length / ticketsPerPage) || 1;
+      if (currentTicketPage >= totalPages) {
+        currentTicketPage = 0;
+      }
+
+      const startIndex = currentTicketPage * ticketsPerPage;
+      const endIndex = Math.min(startIndex + ticketsPerPage, data.length);
+      const pageData = data.slice(startIndex, endIndex);
+
+      pageData.forEach(item => {
+        let badgeColor = "bg-amber-50 text-amber-600 border-amber-100";
+        let pulseDot = "bg-amber-500 animate-ping";
+        
+        if (item.status === "On Proses") {
+          badgeColor = "bg-sky-50 text-sky-600 border-sky-100";
+          pulseDot = "bg-sky-500 animate-pulse";
+        } else if (item.status === "Solved") {
+          badgeColor = "bg-emerald-50 text-emerald-600 border-emerald-100";
+          pulseDot = "bg-emerald-500";
+        } else if (item.status === "Reject") {
+          badgeColor = "bg-rose-50 text-rose-600 border-rose-100";
+          pulseDot = "bg-rose-500";
+        } else if (item.status === "Pending") {
+          badgeColor = "bg-slate-100 text-slate-600 border-slate-200";
+          pulseDot = "bg-slate-500";
+        }
+
+        const deptInit = item.departemen.charAt(0).toUpperCase();
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-1.5 text-center w-32">
+              <span class="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-lg border border-slate-200">${item.id}</span>
+            </td>
+            <td class="py-1.5 truncate">
+              <div class="flex items-center space-x-3">
+                <div class="h-8 w-8 rounded-full bg-brand-50 text-brand-600 font-extrabold flex items-center justify-center text-xs border border-brand-100 shrink-0">${deptInit}</div>
+                <div class="min-w-0">
+                  <span class="block font-bold text-slate-900 text-sm leading-tight truncate">${item.pemohon}</span>
+                  <span class="text-[10px] text-slate-400 block truncate">${item.departemen} - ${item.kategori}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-1.5 text-center w-36">
+              <span class="inline-flex items-center gap-1.5 border ${badgeColor} px-2 py-0.5 rounded-full font-bold text-[10px] uppercase">
+                <span class="h-1.5 w-1.5 rounded-full ${pulseDot}"></span>
+                ${ item.status === "Reject" ? "Ditolak" : item.status === "Solved" ? "Selesai" : item.status }
+              </span>
+            </td>
+            <td class="py-1.5 text-center text-slate-400 font-semibold w-40">
+              <i class="far fa-calendar-alt mr-1"></i>${item.tanggal}
+            </td>
+          </tr>
+        `;
+      });
+
+      // Update pagination controls
+      document.getElementById('ticketPageIndicator').innerText = `Menampilkan ${startIndex + 1}-${endIndex} dari ${data.length} tiket (Hal. ${currentTicketPage + 1}/${totalPages})`;
+      document.getElementById('btnPrevPage').disabled = totalPages <= 1;
+      document.getElementById('btnNextPage').disabled = totalPages <= 1;
+    }
+
+    // Compute Requesters Data dynamically based on emails & names (Sesuai image_fd2063.png)
+    function getRequestersData() {
+      const userMap = {};
+      
+      ticketsDatabase.forEach(ticket => {
+        const key = ticket.email || `${ticket.pemohon.toLowerCase()}@lazalazhar.org`;
+        if (!userMap[key]) {
+          userMap[key] = {
+            name: ticket.pemohon,
+            email: key,
+            total: 0,
+            lastActive: ticket.tanggal
+          };
+        }
+        userMap[key].total += 1;
+        
+        // Periksa tanggal terakhir aktif terbaru
+        if (new Date(ticket.tanggal) > new Date(userMap[key].lastActive)) {
+          userMap[key].lastActive = ticket.tanggal;
+        }
+      });
+
+      return Object.values(userMap).sort((a, b) => b.total - a.total);
+    }
+
+    // Render Data Pemohon (Requesters Table)
+    function renderRequestersTable(data) {
+      const tbody = document.getElementById('requestersTableBody');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-8 text-slate-400">
+              <i class="fas fa-users-slash text-3xl mb-2 opacity-30 block"></i>
+              Tidak ada data pemohon ditemukan.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      data.forEach(user => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-1.5 pl-4 truncate">
+              <div class="flex items-center space-x-3">
+                <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
+                  ${user.name.charAt(0).toUpperCase()}
+                </div>
+                <div class="min-w-0">
+                  <span class="block font-bold text-slate-900 truncate">${user.name}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-1.5 font-semibold text-slate-500 w-64 truncate">${user.email}</td>
+            <td class="py-1.5 text-center w-32">
+              <span class="bg-blue-50 text-blue-600 font-extrabold px-2 py-0.5 rounded-lg text-[11px] border border-blue-100">
+                ${user.total} Req
+              </span>
+            </td>
+            <td class="py-1.5 text-center text-slate-400 font-semibold w-40">
+              <i class="far fa-calendar-alt mr-1.5"></i>${user.lastActive}
+            </td>
+          </tr>
+        `;
+      });
+
+      // Update Highlights Pemohon Teraktif (seperti gambar)
+      if (data.length > 0) {
+        // Data pertama adalah yang teraktif karena sudah di-sort descending
+        document.getElementById('topRequesterName').innerText = data[0].name + " (" + data[0].email + ")";
+        document.getElementById('topRequesterCount').innerText = `${data[0].total} Req`;
+      } else {
+        document.getElementById('topRequesterName').innerText = "Belum Ada Data";
+        document.getElementById('topRequesterCount').innerText = "0 Req";
+      }
+    }
+
+    // Search Engine Filter for Tickets
+    function filterTicketsTable() {
+      const searchVal = document.getElementById('ticketSearch').value.toLowerCase();
+      const filtered = ticketsDatabase.filter(t => {
+        return t.id.toLowerCase().includes(searchVal) || 
+               t.kategori.toLowerCase().includes(searchVal) || 
+               t.departemen.toLowerCase().includes(searchVal) ||
+               t.status.toLowerCase().includes(searchVal);
+      });
+      currentTicketPage = 0;
+      renderTicketTable(filtered);
+      resetAutoSlideTimer();
+    }
+
+    // Search Engine Filter for Requesters / Users
+    function filterRequestersTable() {
+      const searchVal = document.getElementById('userSearch').value.toLowerCase();
+      const allRequesters = getRequestersData();
+      const filtered = allRequesters.filter(u => {
+        return u.name.toLowerCase().includes(searchVal) || 
+               u.email.toLowerCase().includes(searchVal);
+      });
+      renderRequestersTable(filtered);
+    }
+
+    // Toggle Workspace view (Tickets vs Users/Requesters)
+    function toggleMainWorkspace() {
+      const ticketsView = document.getElementById('ticketsWorkspace');
+      const requestersView = document.getElementById('requestersWorkspace');
+      const toggleBtnText = document.getElementById('toggleWorkspaceText');
+      const toggleBtnIcon = document.getElementById('toggleWorkspaceIcon');
+
+      if (currentWorkspace === 'tickets') {
+        ticketsView.classList.add('hidden');
+        requestersView.classList.remove('hidden');
+        toggleBtnText.innerText = "Lihat Daftar Tiket";
+        toggleBtnIcon.className = "fas fa-ticket-alt";
+        currentWorkspace = 'requesters';
+        
+        // Load requesters data
+        const requesters = getRequestersData();
+        renderRequestersTable(requesters);
+      } else {
+        requestersView.classList.add('hidden');
+        ticketsView.classList.remove('hidden');
+        toggleBtnText.innerText = "Lihat Data Pemohon";
+        toggleBtnIcon.className = "fas fa-users";
+        currentWorkspace = 'tickets';
+
+        // Load tickets data
+        filterTicketsTable();
+      }
+    }
+
+    // App Initialization
+    window.onload = function() {
+      initRealTimeClock();    // Jam digital tetap berjalan
+      startLiveMonitorPolling(); // Ambil data live dari Code.gs
+      startAutoSlide();
+    }
+
+    // Fetch data real-time dari backend Code.gs
+    function fetchLiveTicketData() {
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(function(response) {
+            // Mapping data dari Code.gs ke struktur Display.html
+            const rawTickets = response.tickets || [];
+            ticketsDatabase = rawTickets.map(t => ({
+              id: t.ticket_id,
+              pemohon: t.nama,
+              email: t.email || t.whatsapp || '',
+              departemen: t.kategori,       // Unit (IT Support, GA, dll)
+              kategori: t.sub_layanan,      // Sub-Kategori
+              status: t.status,
+              tanggal: t.created_at
+            }));
+
+            // Render ulang semua komponen UI
+            renderDashboardStats();
+            renderTicketTable(ticketsDatabase);
+            const requesters = getRequestersData();
+            renderRequestersTable(requesters);
+          })
+          .withFailureHandler(function(err) {
+            console.error("Gagal mengambil data live:", err);
+          })
+          .getDashboardData(); // Memanggil fungsi di Code.gs
+      } else {
+        console.warn("Tidak berjalan di environment GAS. Data kosong.");
+        // Tetap render UI dengan data kosong agar halaman tidak error
+        renderDashboardStats();
+        renderTicketTable(ticketsDatabase);
+        const requesters = getRequestersData();
+        renderRequestersTable(requesters);
+      }
+    }
+
+    // Auto-Refresh (Polling) setiap 15 detik untuk Lobby Display Monitor
+    let refreshIntervalSeconds = 15;
+    let refreshCountdownValue = refreshIntervalSeconds;
+    let countdownInterval = null;
+    let pollingInterval = null;
+
+    function startLiveMonitorPolling() {
+      fetchLiveTicketData(); // Panggilan pertama saat load
+      resetCountdown();
+      pollingInterval = setInterval(function() {
+        fetchLiveTicketData();
+        resetCountdown();
+      }, refreshIntervalSeconds * 1000);
+    }
+
+    function resetCountdown() {
+      refreshCountdownValue = refreshIntervalSeconds;
+      updateCountdownDisplay();
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(function() {
+        refreshCountdownValue--;
+        if (refreshCountdownValue < 0) refreshCountdownValue = 0;
+        updateCountdownDisplay();
+      }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+      var el = document.getElementById('refreshCountdown');
+      if (el) el.innerText = refreshCountdownValue;
+    }
+
+    function manualRefresh() {
+      var icon = document.getElementById('refreshIcon');
+      if (icon) {
+        icon.classList.add('animate-spin');
+        setTimeout(function() { icon.classList.remove('animate-spin'); }, 1000);
+      }
+      fetchLiveTicketData();
+      // Reset polling & countdown
+      if (pollingInterval) clearInterval(pollingInterval);
+      resetCountdown();
+      pollingInterval = setInterval(function() {
+        fetchLiveTicketData();
+        resetCountdown();
+      }, refreshIntervalSeconds * 1000);
+    }
+
+    // Helper to get filtered tickets
+    function getFilteredTickets() {
+      const searchVal = document.getElementById('ticketSearch').value.toLowerCase();
+      return ticketsDatabase.filter(t => {
+        return t.id.toLowerCase().includes(searchVal) || 
+               t.kategori.toLowerCase().includes(searchVal) || 
+               t.departemen.toLowerCase().includes(searchVal) ||
+               t.status.toLowerCase().includes(searchVal);
+      });
+    }
+
+    // Auto-sliding loop for ticket tables (5 seconds rotation)
+    function startAutoSlide() {
+      if (autoSlideInterval) clearInterval(autoSlideInterval);
+      autoSlideInterval = setInterval(() => {
+        if (currentWorkspace === 'tickets') {
+          const filtered = getFilteredTickets();
+          const totalPages = Math.ceil(filtered.length / ticketsPerPage) || 1;
+          if (totalPages > 1) {
+            currentTicketPage = (currentTicketPage + 1) % totalPages;
+            renderTicketTable(filtered);
+          }
+        }
+      }, 5000);
+    }
+
+    function resetAutoSlideTimer() {
+      startAutoSlide();
+    }
+
+    function nextTicketPage() {
+      const filtered = getFilteredTickets();
+      const totalPages = Math.ceil(filtered.length / ticketsPerPage) || 1;
+      currentTicketPage = (currentTicketPage + 1) % totalPages;
+      renderTicketTable(filtered);
+      resetAutoSlideTimer();
+    }
+
+    // Prev Page Action
+    function prevTicketPage() {
+      const filtered = getFilteredTickets();
+      const totalPages = Math.ceil(filtered.length / ticketsPerPage) || 1;
+      currentTicketPage = (currentTicketPage - 1 + totalPages) % totalPages;
+      renderTicketTable(filtered);
+      resetAutoSlideTimer();
+    }
+
+    // Adjust Kembali ke Portal link dynamically based on dev vs exec mode
+    function adjustBackToPortalLink() {
+      let portalUrl = "<?= execUrl ?>";
+
+      if (portalUrl) {
+        try {
+          const parsedUrl = new URL(portalUrl);
+          parsedUrl.searchParams.delete('view');
+          portalUrl = parsedUrl.toString();
+        } catch (e) {}
+      }
+
+      if (!portalUrl) {
+        portalUrl = window.location.href;
+      }
+
+      const isDevMode = window.location.href.indexOf('/dev') !== -1;
+      if (isDevMode && portalUrl.indexOf('/exec') !== -1) {
+        portalUrl = portalUrl.replace('/exec', '/dev');
+      } else if (!isDevMode && portalUrl.indexOf('/dev') !== -1) {
+        portalUrl = portalUrl.replace('/dev', '/exec');
+      }
+
+      const backBtn = document.getElementById('btnBackToPortal');
+      if (backBtn) {
+        backBtn.href = portalUrl;
+      }
+    }
+
+    adjustBackToPortalLink();
+  </script>
+</body>
+</html>
