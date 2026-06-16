@@ -1232,6 +1232,119 @@ function getAlatNamesArray(namaAlatStr) {
 }
 
 // --- CRUD & OPERATIONS TICKET ---
+function _readTicketFields(ss) {
+  const sheet = ss.getSheetByName('Ticket_Fields');
+  if (!sheet || sheet.getLastRow() <= 1) return [];
+  const data = sheet.getDataRange().getValues();
+  const map = getColumnMap(sheet);
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    result.push({
+      field_name: data[i][map['field_name']],
+      field_label: data[i][map['field_label']],
+      field_type: data[i][map['field_type']]
+    });
+  }
+  return result;
+}
+
+function _readSubCategories(ss) {
+  const sheet = ss.getSheetByName('Sub_Categories');
+  if (!sheet || sheet.getLastRow() <= 1) return [];
+  const data = sheet.getDataRange().getValues();
+  const map = getColumnMap(sheet);
+  const result = [];
+  const namaCol = map['nama_sub'] !== undefined ? map['nama_sub'] : map['nama'];
+  const slaCol = map['sla_hari'];
+  for (let i = 1; i < data.length; i++) {
+    result.push({
+      nama: data[i][namaCol],
+      parent_nama: data[i][map['parent_nama']],
+      sla_hari: slaCol !== undefined ? Number(data[i][slaCol]) : 3
+    });
+  }
+  return result;
+}
+
+function buildRowFromData(headers, dataMap) {
+  const normalizedHeaders = headers.map(function(h) {
+    return String(h).toLowerCase().trim().replace(/[\s-]/g, '_');
+  });
+  const row = new Array(headers.length).fill('');
+  for (let key in dataMap) {
+    const idx = normalizedHeaders.indexOf(key);
+    if (idx !== -1) row[idx] = dataMap[key];
+  }
+  return row;
+}
+
+function updateRequestersOptimized(ss, payload, now) {
+  const sheetReq = ss.getSheetByName('Requesters');
+  const reqData = sheetReq.getDataRange().getValues();
+  const mapReq = getColumnMap(sheetReq);
+  const headLen = reqData[0].length;
+
+  const kontakRaw = String(payload.kontak || '').trim();
+  const isKontakEmail = kontakRaw.indexOf('@') !== -1;
+  const waValue   = isKontakEmail ? '' : kontakRaw;
+  const emailValue = isKontakEmail ? kontakRaw : (payload.email || '');
+  const targetWaNorm = waValue ? normalizePhone(waValue) : '';
+  const targetEmailNorm = emailValue.toLowerCase();
+
+  for (let i = 1; i < reqData.length; i++) {
+    const existingWa = String(reqData[i][mapReq['whatsapp']] !== undefined ? reqData[i][mapReq['whatsapp']] : (reqData[i][mapReq['kontak']] || '')).trim();
+    const existingEmail = String(mapReq['email'] !== undefined ? (reqData[i][mapReq['email']] || '') : '').trim();
+    const matchWa = targetWaNorm && (normalizePhone(existingWa) === targetWaNorm);
+    const matchEmail = targetEmailNorm && (existingEmail.toLowerCase() === targetEmailNorm);
+    const existingKontak = String(mapReq['kontak'] !== undefined ? (reqData[i][mapReq['kontak']] || '') : '').trim();
+    const matchKontak = kontakRaw && (existingKontak === kontakRaw);
+
+    if (matchWa || matchEmail || matchKontak) {
+      const updatedRow = reqData[i].slice();
+      updatedRow[mapReq['total_request']] = (Number(updatedRow[mapReq['total_request']]) || 0) + 1;
+      updatedRow[mapReq['last_request']] = now;
+      if (mapReq['nama'] !== undefined) updatedRow[mapReq['nama']] = payload.nama;
+      if (mapReq['email'] !== undefined && !existingEmail && emailValue) updatedRow[mapReq['email']] = emailValue;
+      if (mapReq['whatsapp'] !== undefined && !existingWa && waValue) updatedRow[mapReq['whatsapp']] = waValue;
+      sheetReq.getRange(i + 1, 1, 1, headLen).setValues([updatedRow]);
+      return;
+    }
+  }
+
+  if (mapReq['whatsapp'] !== undefined) {
+    sheetReq.appendRow([waValue, emailValue, payload.nama, 1, now]);
+  } else {
+    sheetReq.appendRow([kontakRaw, payload.nama, 1, now]);
+  }
+}
+
+function saveTicketDetailsBatch(ss, ticketId, customFields, tfDataCache) {
+  if (!customFields || typeof customFields !== 'object') return;
+  var sheet = ss.getSheetByName('Ticket_Details');
+  if (!sheet) {
+    sheet = ss.insertSheet('Ticket_Details');
+    sheet.appendRow(['id', 'ticket_id', 'field_name', 'field_label', 'field_value', 'created_at']);
+    sheet.setFrozenRows(1);
+  }
+  var labelMap = {};
+  if (tfDataCache) {
+    tfDataCache.forEach(function(f) { labelMap[f.field_name] = f.field_label; });
+  }
+  var keys = Object.keys(customFields);
+  var rowsToInsert = [];
+  for (var k = 0; k < keys.length; k++) {
+    var fieldName = keys[k];
+    var fieldValue = customFields[fieldName];
+    if (fieldValue === undefined || fieldValue === null || fieldValue === '') continue;
+    var label = labelMap[fieldName] || fieldName;
+    rowsToInsert.push([Date.now() + k, ticketId, fieldName, label, String(fieldValue), new Date()]);
+  }
+  if (rowsToInsert.length > 0) {
+    var startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, rowsToInsert.length, 6).setValues(rowsToInsert);
+  }
+}
+
 function submitTicket(payload) {
   const lock = LockService.getScriptLock();
   try {
@@ -1378,46 +1491,33 @@ function submitTicket(payload) {
 
     const ticketId = 'TKT-' + Math.floor(1000 + Math.random() * 9000) + '-' + new Date().getTime().toString().slice(-4);
     const now = new Date();
-    
-    // === HITUNG SLA ===
-    let slaHari = 3; // Default 3 hari kerja
-    let slaDeadline = '';
-    const sheetSubCats = ss.getSheetByName('Sub_Categories');
-    if (sheetSubCats && payload.sub_layanan) {
-      const subData = sheetSubCats.getDataRange().getValues();
-      const subMap = getColumnMap(sheetSubCats);
-      const subNameCol = subMap['nama_sub'] !== undefined ? subMap['nama_sub'] : subMap['nama'];
-      const slaCol = subMap['sla_hari'];
-      for (let s = 1; s < subData.length; s++) {
-        if (subNameCol !== undefined && subData[s][subNameCol] === payload.sub_layanan) {
-          if (slaCol !== undefined) {
-            const valSla = Number(subData[s][slaCol]);
-            if (!isNaN(valSla) && valSla > 0) {
-              slaHari = valSla;
-            }
-          }
-          break;
-        }
+
+    // === LOAD ALL CACHED DATA SEKALI DI AWAL ===
+    const [cats, notifConf, tfData, subCatsData] = [
+      getCategories(),
+      getNotifConfig(),
+      _readTicketFields(ss),
+      _readSubCategories(ss)
+    ];
+
+    // === HITUNG SLA (pakai cache, bukan baca sheet ulang) ===
+    let slaHari = 3;
+    if (payload.sub_layanan) {
+      const subCat = subCatsData.find(function(s) { return s.nama === payload.sub_layanan; });
+      if (subCat && subCat.sla_hari && !isNaN(subCat.sla_hari) && subCat.sla_hari > 0) {
+        slaHari = subCat.sla_hari;
       }
     }
-    
-    slaDeadline = addWorkingDays(now, slaHari);
+    const slaDeadline = addWorkingDays(now, slaHari);
     let slaStatus = 'On Time';
-    
+
     function appendDynamicRow(sheetName, defaultVals) {
       const sheet = ss.getSheetByName(sheetName);
       if(!sheet) return;
-      const map = getColumnMap(sheet);
-      const headLen = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].length;
-      let newRow = new Array(headLen).fill('');
-      
-      for(let key in map) {
-        if(defaultVals[key] !== undefined) newRow[map[key]] = defaultVals[key];
-      }
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const newRow = buildRowFromData(headers, defaultVals);
       sheet.appendRow(newRow);
     }
-
-
 
     const rowData = {
       id: Date.now(),
@@ -1446,77 +1546,27 @@ function submitTicket(payload) {
       sla_hari: slaHari,
       sla_deadline: slaDeadline,
       sla_status: slaStatus,
-      solved_at: ''
+      solved_at: '',
+      jenis_pengajuan: payload.jenis_pengajuan || payload.sub_layanan || '',
+      id_template: payload.id_template || ''
     };
 
-    // 1. Simpan ke Master Tickets
+    // 1. Simpan ke Master Tickets (sudah termasuk jenis_pengajuan & id_template)
     appendDynamicRow('Master_Tickets', rowData);
 
-    // 2. Simpan ke Sheet Kategori Spesifik
-    const cats = getCategories();
+    // 2. Simpan ke Sheet Kategori Spesifik (pakai cache, bukan getCategories())
     const cat = cats.find(function(c) { return c.nama === payload.kategori; });
     if(cat && cat.sheet_name) {
       appendDynamicRow(cat.sheet_name, rowData);
     }
 
+    // 4. Update atau Simpan ke Requesters — batch write, bukan individual setValue
+    updateRequestersOptimized(ss, payload, now);
 
-
-    // 4. Update atau Simpan ke Requesters
-    const sheetReq = ss.getSheetByName('Requesters');
-    const reqData = sheetReq.getDataRange().getValues();
-    const mapReq = getColumnMap(sheetReq);
-    let found = false;
-
-    // Deteksi apakah kontak adalah email atau nomor WA
-    const kontakRaw = String(payload.kontak || '').trim();
-    const isKontakEmail = kontakRaw.indexOf('@') !== -1;
-    const waValue   = isKontakEmail ? '' : kontakRaw;
-    const emailValue = isKontakEmail ? kontakRaw : (payload.email || '');
-
-    const targetWaNorm = waValue ? normalizePhone(waValue) : '';
-    const targetEmailNorm = emailValue.toLowerCase();
-    
-    for(let i=1; i<reqData.length; i++) {
-      const existingWa = String(reqData[i][mapReq['whatsapp']] !== undefined ? reqData[i][mapReq['whatsapp']] : (reqData[i][mapReq['kontak']] || '')).trim();
-      const existingEmail = String(mapReq['email'] !== undefined ? (reqData[i][mapReq['email']] || '') : '').trim();
-      
-      const matchWa = targetWaNorm && (normalizePhone(existingWa) === targetWaNorm);
-      const matchEmail = targetEmailNorm && (existingEmail.toLowerCase() === targetEmailNorm);
-      // Fallback: match by kontak column jika ada
-      const existingKontak = String(mapReq['kontak'] !== undefined ? (reqData[i][mapReq['kontak']] || '') : '').trim();
-      const matchKontak = kontakRaw && (existingKontak === kontakRaw);
-      
-      if (matchWa || matchEmail || matchKontak) {
-        let currentTotal = Number(reqData[i][mapReq['total_request']]) || 0;
-        sheetReq.getRange(i+1, mapReq['total_request']+1).setValue(currentTotal + 1);
-        sheetReq.getRange(i+1, mapReq['last_request']+1).setValue(now);
-        if (mapReq['nama'] !== undefined) sheetReq.getRange(i+1, mapReq['nama']+1).setValue(payload.nama);
-        
-        // Update field yang masih kosong
-        if (mapReq['email'] !== undefined && !existingEmail && emailValue) {
-          sheetReq.getRange(i+1, mapReq['email']+1).setValue(emailValue);
-        }
-        if (mapReq['whatsapp'] !== undefined && !existingWa && waValue) {
-          sheetReq.getRange(i+1, mapReq['whatsapp']+1).setValue(waValue);
-        }
-        
-        found = true;
-        break;
-      }
-    }
-    if(!found) {
-      // Simpan ke kolom yang ada: whatsapp+email atau fallback ke kontak
-      if (mapReq['whatsapp'] !== undefined) {
-        sheetReq.appendRow([waValue, emailValue, payload.nama, 1, now]);
-      } else {
-        sheetReq.appendRow([kontakRaw, payload.nama, 1, now]);
-      }
-    }
-
-    // 5. Save custom fields to Ticket_Details if present
+    // 5. Save custom fields — batch insert, bukan loop appendRow
     if (payload.custom_fields && typeof payload.custom_fields === 'object') {
       try {
-        saveTicketDetails(ticketId, payload.custom_fields);
+        saveTicketDetailsBatch(ss, ticketId, payload.custom_fields, tfData);
       } catch(cfErr) {
         Logger.log('Gagal simpan custom fields: ' + cfErr.toString());
       }
@@ -1540,28 +1590,8 @@ function submitTicket(payload) {
       }
     }
 
-    // Update jenis_pengajuan & id_template on Master_Tickets
-    if (payload.jenis_pengajuan || payload.id_template) {
-      try {
-        var mtSheet = ss.getSheetByName('Master_Tickets');
-        var mtData = mtSheet.getDataRange().getValues();
-        var mtMap = getColumnMap(mtSheet);
-        for (var mt = 1; mt < mtData.length; mt++) {
-          if (String(mtData[mt][mtMap['ticket_id']]) === ticketId) {
-            if (mtMap['jenis_pengajuan'] !== undefined) mtSheet.getRange(mt + 1, mtMap['jenis_pengajuan'] + 1).setValue(payload.jenis_pengajuan || payload.sub_layanan || '');
-            if (mtMap['id_template'] !== undefined) mtSheet.getRange(mt + 1, mtMap['id_template'] + 1).setValue(payload.id_template || '');
-            break;
-          }
-        }
-      } catch(jpErr) {
-        Logger.log('Gagal update jenis_pengajuan: ' + jpErr.toString());
-      }
-    }
-
-    // --- NOTIFIKASI TIKET BARU ---
+    // --- NOTIFIKASI TIKET BARU (pakai notifConf yang sudah di-cache) ---
     try {
-      const notifConf = getNotifConfig();
-      // Prepare borrowInfo if borrowing fields exist
       let borrowInfo = null;
       if (payload.id_alat && payload.nama_alat && payload.jumlah_pinjam) {
         borrowInfo = {
@@ -1573,7 +1603,6 @@ function submitTicket(payload) {
         };
       }
 
-      // Paket identitas user untuk dikirim di notifikasi
       var userInfo = {
         whatsapp:          payload.whatsapp          || '',
         email:             payload.email             || '',
@@ -1581,20 +1610,18 @@ function submitTicket(payload) {
         sub_divisi_pengaju: payload.sub_divisi_pengaju || '',
         jabatan_pengaju:   payload.jabatan_pengaju   || ''
       };
-      
-      // Build custom fields HTML and plain text
+
       var customFieldsHtml = '';
       var customFieldsText = '';
       if (payload.custom_fields && typeof payload.custom_fields === 'object') {
         try {
-          customFieldsHtml = buildCustomFieldsHtml(payload.custom_fields);
-          customFieldsText = buildCustomFieldsText(payload.custom_fields);
+          customFieldsHtml = buildCustomFieldsHtml(payload.custom_fields, tfData);
+          customFieldsText = buildCustomFieldsText(payload.custom_fields, tfData);
         } catch(cfErr) {
           Logger.log('Gagal menyusun detail kustom untuk notifikasi: ' + cfErr.toString());
         }
       }
-      
-      // Email ke Admin
+
       if (notifConf.enable_email === 'true') {
         var recipientEmail = notifConf.admin_email;
         if (recipientEmail) {
@@ -1604,7 +1631,6 @@ function submitTicket(payload) {
           kirimEmailAdminBaru(ticketId, payload.nama, payload.kategori, payload.sub_layanan || '', payload.deskripsi, borrowInfo, customFieldsHtml, notifConf.finance_admin_email, userInfo);
         }
       }
-      // Notif ke User
       if (notifConf.enable_whatsapp === 'true' && notifConf.wa_gateway_url && notifConf.wa_api_key && payload.whatsapp) {
         kirimWhatsAppUserBaru(ticketId, payload.nama, payload.whatsapp, payload.kategori, payload.sub_layanan || '', payload.deskripsi, customFieldsText, userInfo);
       }
@@ -2851,90 +2877,28 @@ function saveRoomBooking(ticketId, namaPemesan, idRuangan, tgl, jamMulai, jamSel
 function saveTicketDetails(ticketId, customFields) {
   if (!customFields || typeof customFields !== 'object') return;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Ticket_Details');
-  if (!sheet) {
-    sheet = ss.insertSheet('Ticket_Details');
-    sheet.appendRow(['id', 'ticket_id', 'field_name', 'field_label', 'field_value', 'created_at']);
-    sheet.setFrozenRows(1);
-  }
-  var keys = Object.keys(customFields);
-  for (var k = 0; k < keys.length; k++) {
-    var fieldName = keys[k];
-    var fieldValue = customFields[fieldName];
-    if (fieldValue === undefined || fieldValue === null) fieldValue = '';
-
-    // Resolve key if it matches specific IDs to friendly name
-    var resolvedValue = String(fieldValue);
-    if (fieldName === 'id_ruangan' && resolvedValue) {
-      try {
-        var roomSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Rooms');
-        if (roomSheet) {
-          var roomData = roomSheet.getDataRange().getValues();
-          var roomMap = getColumnMap(roomSheet);
-          for (var ri = 1; ri < roomData.length; ri++) {
-            if (String(roomData[ri][roomMap['id_ruangan']]) === resolvedValue) {
-              resolvedValue = String(roomData[ri][roomMap['nama_ruangan']]) + ' (' + String(roomData[ri][roomMap['lokasi']]) + ')';
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    } else if (fieldName === 'id_alat' && resolvedValue) {
-      try {
-        var invSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory_Alat');
-        if (invSheet) {
-          var invData = invSheet.getDataRange().getValues();
-          var invMap = getColumnMap(invSheet);
-          for (var ii = 1; ii < invData.length; ii++) {
-            if (String(invData[ii][invMap['id_alat']]) === resolvedValue) {
-              resolvedValue = String(invData[ii][invMap['nama_alat']]);
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    } else if (fieldName === 'id_kendaraan' && resolvedValue) {
-      try {
-        var vhSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Vehicles');
-        if (vhSheet) {
-          var vhData = vhSheet.getDataRange().getValues();
-          var vhMap = getColumnMap(vhSheet);
-          for (var vi = 1; vi < vhData.length; vi++) {
-            if (String(vhData[vi][vhMap['id_kendaraan']]) === resolvedValue) {
-              resolvedValue = String(vhData[vi][vhMap['nama_kendaraan']]) + ' (' + String(vhData[vi][vhMap['plat_nomor']]) + ')';
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-
-    // Try to find the label from Ticket_Fields
-    var label = fieldName;
-    try {
-      var tfSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Ticket_Fields');
-      if (tfSheet && tfSheet.getLastRow() > 1) {
-        var tfData = tfSheet.getDataRange().getValues();
-        var tfMap = getColumnMap(tfSheet);
-        for (var ti = 1; ti < tfData.length; ti++) {
-          if (String(tfData[ti][tfMap['field_name']]) === fieldName) {
-            label = String(tfData[ti][tfMap['field_label']]);
-            break;
-          }
-        }
-      }
-    } catch(e) {}
-    sheet.appendRow([Date.now() + k, ticketId, fieldName, label, resolvedValue, new Date()]);
-  }
+  var tfData = _readTicketFields(ss);
+  saveTicketDetailsBatch(ss, ticketId, customFields, tfData);
 }
 
-function buildCustomFieldsHtml(customFields) {
+function buildCustomFieldsHtml(customFields, tfDataCache) {
   if (!customFields || typeof customFields !== 'object') return '';
   var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;color:#374151;border-radius:6px;overflow:hidden;">';
   var keys = Object.keys(customFields);
-  var tfSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Ticket_Fields');
-  var tfData = tfSheet ? tfSheet.getDataRange().getValues() : [];
-  var tfMap = tfSheet ? getColumnMap(tfSheet) : {};
+  
+  var labelMap = {};
+  if (tfDataCache) {
+    tfDataCache.forEach(function(f) { labelMap[f.field_name] = f.field_label; });
+  } else {
+    var tfSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Ticket_Fields');
+    var tfData = tfSheet ? tfSheet.getDataRange().getValues() : [];
+    var tfMap = tfSheet ? getColumnMap(tfSheet) : {};
+    if (tfSheet && tfData.length > 1) {
+      for (var ti = 1; ti < tfData.length; ti++) {
+        labelMap[String(tfData[ti][tfMap['field_name']])] = String(tfData[ti][tfMap['field_label']]);
+      }
+    }
+  }
   
   var hasData = false;
   for (var i = 0; i < keys.length; i++) {
@@ -2942,66 +2906,8 @@ function buildCustomFieldsHtml(customFields) {
     var val = customFields[key];
     if (val === undefined || val === null || val === '') continue;
     
-    var label = key;
-    if (tfSheet && tfData.length > 1) {
-      for (var ti = 1; ti < tfData.length; ti++) {
-        if (String(tfData[ti][tfMap['field_name']]) === key) {
-          label = String(tfData[ti][tfMap['field_label']]);
-          break;
-        }
-      }
-    }
-    if (label === key) {
-      label = key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
-    }
+    var label = labelMap[key] || key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
     
-    // Resolve IDs to names
-    if (key === 'id_ruangan') {
-      try {
-        var roomSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Rooms');
-        if (roomSheet) {
-          var roomData = roomSheet.getDataRange().getValues();
-          var roomMap = getColumnMap(roomSheet);
-          for (var ri = 1; ri < roomData.length; ri++) {
-            if (String(roomData[ri][roomMap['id_ruangan']]) === val) {
-              val = String(roomData[ri][roomMap['nama_ruangan']]) + ' (' + String(roomData[ri][roomMap['lokasi']]) + ')';
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-    if (key === 'id_alat') {
-      try {
-        var invSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory_Alat');
-        if (invSheet) {
-          var invData = invSheet.getDataRange().getValues();
-          var invMap = getColumnMap(invSheet);
-          for (var ii = 1; ii < invData.length; ii++) {
-            if (String(invData[ii][invMap['id_alat']]) === val) {
-              val = String(invData[ii][invMap['nama_alat']]);
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-    if (key === 'id_kendaraan') {
-      try {
-        var vhSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Vehicles');
-        if (vhSheet) {
-          var vhData = vhSheet.getDataRange().getValues();
-          var vhMap = getColumnMap(vhSheet);
-          for (var vi = 1; vi < vhData.length; vi++) {
-            if (String(vhData[vi][vhMap['id_kendaraan']]) === val) {
-              val = String(vhData[vi][vhMap['nama_kendaraan']]) + ' (' + String(vhData[vi][vhMap['plat_nomor']]) + ')';
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-
     // Skip internal/system fields that don't perlu ditampilkan
     if (key === 'info_aturan') continue;
 
@@ -3013,78 +2919,31 @@ function buildCustomFieldsHtml(customFields) {
   return hasData ? html : '';
 }
 
-function buildCustomFieldsText(customFields) {
+function buildCustomFieldsText(customFields, tfDataCache) {
   if (!customFields || typeof customFields !== 'object') return '';
   var text = '';
   var keys = Object.keys(customFields);
-  var tfSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Ticket_Fields');
-  var tfData = tfSheet ? tfSheet.getDataRange().getValues() : [];
-  var tfMap = tfSheet ? getColumnMap(tfSheet) : {};
+  
+  var labelMap = {};
+  if (tfDataCache) {
+    tfDataCache.forEach(function(f) { labelMap[f.field_name] = f.field_label; });
+  } else {
+    var tfSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Ticket_Fields');
+    var tfData = tfSheet ? tfSheet.getDataRange().getValues() : [];
+    var tfMap = tfSheet ? getColumnMap(tfSheet) : {};
+    if (tfSheet && tfData.length > 1) {
+      for (var ti = 1; ti < tfData.length; ti++) {
+        labelMap[String(tfData[ti][tfMap['field_name']])] = String(tfData[ti][tfMap['field_label']]);
+      }
+    }
+  }
   
   for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
     var val = customFields[key];
     if (val === undefined || val === null || val === '') continue;
     
-    var label = key;
-    if (tfSheet && tfData.length > 1) {
-      for (var ti = 1; ti < tfData.length; ti++) {
-        if (String(tfData[ti][tfMap['field_name']]) === key) {
-          label = String(tfData[ti][tfMap['field_label']]);
-          break;
-        }
-      }
-    }
-    if (label === key) {
-      label = key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
-    }
-    
-    // Resolve IDs to names
-    if (key === 'id_ruangan') {
-      try {
-        var roomSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Rooms');
-        if (roomSheet) {
-          var roomData = roomSheet.getDataRange().getValues();
-          var roomMap = getColumnMap(roomSheet);
-          for (var ri = 1; ri < roomData.length; ri++) {
-            if (String(roomData[ri][roomMap['id_ruangan']]) === val) {
-              val = String(roomData[ri][roomMap['nama_ruangan']]) + ' (' + String(roomData[ri][roomMap['lokasi']]) + ')';
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-    if (key === 'id_alat') {
-      try {
-        var invSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory_Alat');
-        if (invSheet) {
-          var invData = invSheet.getDataRange().getValues();
-          var invMap = getColumnMap(invSheet);
-          for (var ii = 1; ii < invData.length; ii++) {
-            if (String(invData[ii][invMap['id_alat']]) === val) {
-              val = String(invData[ii][invMap['nama_alat']]);
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-    if (key === 'id_kendaraan') {
-      try {
-        var vhSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Vehicles');
-        if (vhSheet) {
-          var vhData = vhSheet.getDataRange().getValues();
-          var vhMap = getColumnMap(vhSheet);
-          for (var vi = 1; vi < vhData.length; vi++) {
-            if (String(vhData[vi][vhMap['id_kendaraan']]) === val) {
-              val = String(vhData[vi][vhMap['nama_kendaraan']]) + ' (' + String(vhData[vi][vhMap['plat_nomor']]) + ')';
-              break;
-            }
-          }
-        }
-      } catch(e) {}
-    }
+    var label = labelMap[key] || key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
 
     // Skip internal/system fields
     if (key === 'info_aturan') continue;

@@ -659,13 +659,225 @@
       }
 
       .wizard-step .step-circle {
-        width: 34px;
-        height: 34px;
-        font-size: 0.8rem;
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
       }
 
       .wizard-line {
-        min-width: 18px;
+        min-width: 22px;
+      }
+    }
+
+    /* ===== MOBILE-FIRST IMPROVEMENTS ===== */
+
+    /* Touch targets: minimum 44px for all interactive elements */
+    .nav-item-custom,
+    .btn,
+    .badge-status,
+    .dropdown-item,
+    .form-check-input,
+    .modal-header .btn-close {
+      min-height: 44px;
+    }
+    .btn-sm {
+      min-height: 36px;
+    }
+
+    /* Dashboard stat cards: full-width on xs screens */
+    @media (max-width: 420px) {
+      .dashboard-stat-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+      }
+    }
+    .dashboard-stat-col .card-body h3 {
+      font-size: 1.6rem;
+    }
+    @media (max-width: 420px) {
+      .dashboard-stat-col .card-body h3 {
+        font-size: 1.8rem;
+      }
+      .dashboard-stat-col .card-body p {
+        font-size: 0.8rem !important;
+      }
+    }
+
+    /* Dashboard chart canvases: responsive height */
+    @media (max-width: 768px) {
+      .chart-wrapper {
+        height: 220px !important;
+      }
+    }
+
+    /* Mobile nav bar: sticky with better tap targets */
+    .mobile-top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1025;
+    }
+
+    /* Filter toolbar: collapsible on mobile */
+    .filter-collapse-toggle {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .filter-collapse-toggle {
+        display: inline-flex;
+      }
+      .filter-collapse-body {
+        display: none;
+      }
+      .filter-collapse-body.show {
+        display: block;
+      }
+    }
+
+    /* Ticketing mobile card view */
+    @media (max-width: 768px) {
+      .ticket-table-desktop {
+        display: none;
+      }
+      .ticket-cards-mobile {
+        display: block;
+      }
+    }
+    @media (min-width: 769px) {
+      .ticket-cards-mobile {
+        display: none;
+      }
+    }
+    .ticket-card-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .ticket-card-item:active {
+      transform: scale(0.98);
+    }
+
+    /* Floating Action Button for mobile */
+    @media (max-width: 768px) {
+      .fab-mobile {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1050;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+      }
+      .ticket-actions-desktop {
+        display: none !important;
+      }
+    }
+    @media (min-width: 769px) {
+      .fab-mobile {
+        display: none !important;
+      }
+    }
+
+    /* Bottom action sheet for admin buttons on mobile */
+    @media (max-width: 768px) {
+      .bottom-action-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        padding: 10px 16px;
+        z-index: 1045;
+        display: flex;
+        gap: 8px;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+      }
+      .main-content {
+        padding-bottom: 70px;
+      }
+    }
+    @media (min-width: 769px) {
+      .bottom-action-sheet {
+        display: none;
+      }
+    }
+
+    /* Responsive sidebar overlay improvement */
+    .sidebar-overlay {
+      transition: opacity 0.3s ease;
+    }
+
+    /* Public hero mobile */
+    @media (max-width: 576px) {
+      .public-hero {
+        padding: 3rem 0;
+      }
+      .public-hero h1 {
+        font-size: 1.6rem;
+      }
+      .public-hero p {
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Form field improvements on mobile */
+    @media (max-width: 576px) {
+      .form-control, .form-select {
+        font-size: 16px !important; /* prevent zoom on iOS */
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+      .wizard-nav .btn {
+        padding: 12px 16px;
+        font-size: 1rem;
+      }
+      .upload-zone {
+        padding: 1.5rem 1rem;
+      }
+      .upload-zone i {
+        font-size: 2rem;
+      }
+    }
+
+    /* Modal fullscreen on mobile */
+    @media (max-width: 576px) {
+      .modal-fullscreen-mobile .modal-dialog {
+        margin: 0;
+        max-width: 100%;
+      }
+      .modal-fullscreen-mobile .modal-content {
+        border-radius: 0;
+        min-height: 100vh;
+      }
+    }
+
+    /* Sidebar nav item: larger tap */
+    .nav-item-custom {
+      padding: 12px 16px;
+      min-height: 48px;
+    }
+
+    /* Better spacing for mobile tables */
+    @media (max-width: 768px) {
+      .table-custom-top th,
+      .table-custom-top td {
+        padding: 10px 8px !important;
+        font-size: 0.8rem;
+      }
+    }
+
+    /* Scrollable tabs on mobile for dashboard */
+    @media (max-width: 768px) {
+      .dashboard-chart-row .card-body {
+        height: 220px !important;
       }
     }
   </style>
@@ -1092,9 +1304,20 @@
     </aside>
 
     <main class="main-content bg-light">
-      <div class="d-flex align-items-center justify-content-between mb-4 d-lg-none bg-white p-3 rounded-3 shadow-sm">
-        <h5 class="fw-bold mb-0 text-primary-custom"><i class="fa-solid fa-bolt me-2"></i>Ticketing</h5>
-        <button class="btn btn-light border" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+      <div class="d-flex align-items-center justify-content-between mb-4 d-lg-none bg-white p-3 rounded-3 shadow-sm mobile-top-bar">
+        <h5 class="fw-bold mb-0 text-primary-custom" id="mobilePageTitle"><i class="fa-solid fa-bolt me-2"></i>Dashboard</h5>
+        <button class="btn btn-light border px-3 py-2" onclick="toggleSidebar()" style="min-width:44px;min-height:44px;"><i class="fa-solid fa-bars"></i></button>
+      </div>
+
+      <!-- FAB untuk mobile: buat tiket baru -->
+      <button class="fab-mobile btn btn-primary" onclick="openTicketModal()" title="Buat Tiket Baru">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+
+      <!-- Bottom action sheet untuk mobile -->
+      <div class="bottom-action-sheet d-lg-none" id="mobileActionSheet" style="display:none;">
+        <button class="btn btn-outline-success flex-fill rounded-3 fw-medium" onclick="handleExport('excel')"><i class="fa-solid fa-file-excel me-1"></i> Excel</button>
+        <button class="btn btn-outline-danger flex-fill rounded-3 fw-medium" onclick="handleExport('pdf')"><i class="fa-solid fa-file-pdf me-1"></i> PDF</button>
       </div>
 
       <div id="page-dashboard" class="">
@@ -1104,7 +1327,7 @@
       <div id="page-ticketing" class="d-none">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
           <h4 class="fw-bold mb-0 text-dark">Daftar Tiket Layanan</h4>
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 ticket-actions-desktop">
             <button class="btn btn-outline-success rounded-3 shadow-sm fw-medium" onclick="handleExport('excel')"><i
                 class="fa-solid fa-file-excel me-1"></i> Excel</button>
             <button class="btn btn-outline-danger rounded-3 shadow-sm fw-medium" onclick="handleExport('pdf')"><i
@@ -1146,35 +1369,40 @@
                   <option value="">Semua Kategori</option>
                 </select>
               </div>
-              <div class="col-md-3 text-end">
+              <div class="col-md-3 text-end d-flex align-items-center justify-content-end gap-2">
                 <span class="small text-muted fw-medium" id="filterCount">Menampilkan: 0 tiket</span>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill filter-collapse-toggle px-2" type="button" onclick="toggleFilterCollapse()" id="filterToggleBtn">
+                  <i class="fa-solid fa-sliders"></i>
+                </button>
               </div>
             </div>
-            <div class="row g-2 align-items-center mt-1">
-              <div class="col-md-2">
-                <select class="form-select form-select-sm" id="filterSla">
-                  <option value="">Semua SLA</option>
-                  <option value="overdue">🔥 Overdue</option>
-                  <option value="warning">⚠️ Warning (H-1)</option>
-                  <option value="ontime">✅ On Time</option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <input type="date" class="form-control form-control-sm" id="filterDateFrom" title="Dari Tanggal">
-              </div>
-              <div class="col-md-2">
-                <input type="date" class="form-control form-control-sm" id="filterDateTo" title="Sampai Tanggal">
-              </div>
-              <div class="col-md-2">
-                <select class="form-select form-select-sm" id="filterBulan">
-                  <option value="">Semua Bulan</option>
-                </select>
-              </div>
-              <div class="col-md-4 text-end d-flex justify-content-end gap-2">
-                <button class="btn btn-sm btn-primary rounded-pill px-3 fw-medium shadow-sm"
-                  onclick="applyTicketFilters()"><i class="fa-solid fa-filter me-1"></i>Terapkan</button>
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="resetTicketFilters()"><i
-                    class="fa-solid fa-rotate-left me-1"></i>Reset Filter</button>
+            <div class="filter-collapse-body" id="filterCollapseBody">
+              <div class="row g-2 align-items-center mt-2">
+                <div class="col-md-2">
+                  <select class="form-select form-select-sm" id="filterSla">
+                    <option value="">Semua SLA</option>
+                    <option value="overdue">🔥 Overdue</option>
+                    <option value="warning">⚠️ Warning (H-1)</option>
+                    <option value="ontime">✅ On Time</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <input type="date" class="form-control form-control-sm" id="filterDateFrom" title="Dari Tanggal">
+                </div>
+                <div class="col-md-2">
+                  <input type="date" class="form-control form-control-sm" id="filterDateTo" title="Sampai Tanggal">
+                </div>
+                <div class="col-md-2">
+                  <select class="form-select form-select-sm" id="filterBulan">
+                    <option value="">Semua Bulan</option>
+                  </select>
+                </div>
+                <div class="col-md-4 text-end d-flex justify-content-end gap-2">
+                  <button class="btn btn-sm btn-primary rounded-pill px-3 fw-medium shadow-sm"
+                    onclick="applyTicketFilters()"><i class="fa-solid fa-filter me-1"></i>Terapkan</button>
+                  <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="resetTicketFilters()"><i
+                      class="fa-solid fa-rotate-left me-1"></i>Reset Filter</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1198,6 +1426,7 @@
             </div>
           </div>
         </div>
+        <div class="ticket-cards-mobile" id="ticketingCardsContainer"></div>
       </div>
 
       <div id="page-users" class="d-none">
@@ -1487,7 +1716,7 @@
     </main>
   </div>
 
-  <div class="modal fade" id="modalTicket" tabindex="-1">
+  <div class="modal fade modal-fullscreen-mobile" id="modalTicket" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4">
         <div class="modal-header border-bottom-0 pb-0">
@@ -1522,7 +1751,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalCategory" tabindex="-1">
+  <div class="modal fade modal-fullscreen-mobile" id="modalCategory" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4">
         <div class="modal-header border-bottom-0 pb-0">
@@ -1545,7 +1774,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalSubCategory" tabindex="-1">
+  <div class="modal fade modal-fullscreen-mobile" id="modalSubCategory" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4">
         <div class="modal-header border-bottom-0 pb-0">
@@ -1568,7 +1797,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalAdminUser" tabindex="-1">
+  <div class="modal fade modal-fullscreen-mobile" id="modalAdminUser" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4">
         <div class="modal-header border-bottom-0 pb-0">
@@ -1617,7 +1846,7 @@
   </div>
 
   <!-- MODAL: FORM FIELD BUILDER -->
-  <div class="modal fade" id="modalFormField" tabindex="-1">
+  <div class="modal fade modal-fullscreen-mobile" id="modalFormField" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4">
         <div class="modal-header border-bottom-0 pb-0">
@@ -1835,6 +2064,15 @@
       else document.querySelectorAll('.nav-item-custom').forEach(n => { if (n.getAttribute('onclick').includes(pageName)) n.classList.add('active'); });
       document.querySelectorAll('[id^="page"]').forEach(p => p.classList.add('d-none'));
       document.getElementById('page-' + pageName)?.classList.remove('d-none');
+      // Update mobile page title
+      var pageNames = { dashboard: 'Dashboard', ticketing: 'Ticketing', users: 'Users / Klien', adds: 'Unit', subcats: 'Kategori', 'form-fields': 'Pengaturan Form', 'admin-users': 'Manajemen Admin', config: 'Konfigurasi', sla: 'Pengaturan SLA' };
+      var titleEl = document.getElementById('mobilePageTitle');
+      if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-bolt me-2"></i>' + (pageNames[pageName] || pageName);
+      // Show/hide mobile bottom action sheet
+      var sheet = document.getElementById('mobileActionSheet');
+      if (sheet) {
+        sheet.style.display = (pageName === 'ticketing' && window.innerWidth < 768) ? 'flex' : 'none';
+      }
       if (window.innerWidth < 992) toggleSidebar();
       loadPageData(pageName);
     }
@@ -2179,7 +2417,7 @@
 
       html += '<div class="row g-3 mb-4">';
       stats.forEach(st => {
-        html += '<div class="col-xl-2 col-lg-4 col-6" onclick="goToTicketingWithFilter(\'' + st.f + '\')" style="cursor: pointer;"><div class="card border-0 shadow-sm rounded-4 h-100 ' + st.b + ' stat-card overflow-hidden position-relative"><div class="position-absolute end-0 top-0 mt-3 me-2 opacity-25"><i class="fa-solid ' + st.i + ' fa-2x"></i></div><div class="card-body p-3 position-relative z-1"><p class="fw-medium mb-1 opacity-75 small">' + st.l + '</p><h3 class="fw-bold mb-2">' + st.v + '</h3><div class="progress" style="height: 4px; background-color: rgba(255,255,255,0.3);"><div class="progress-bar ' + st.c + '" role="progressbar" style="width: ' + st.pct + '%"></div></div><p class="mb-0 mt-2 opacity-75" style="font-size:0.65rem;">' + st.pct + '% dari total</p></div></div></div>';
+        html += '<div class="col-xl-2 col-lg-4 col-6 dashboard-stat-col" onclick="goToTicketingWithFilter(\'' + st.f + '\')" style="cursor: pointer;"><div class="card border-0 shadow-sm rounded-4 h-100 ' + st.b + ' stat-card overflow-hidden position-relative"><div class="position-absolute end-0 top-0 mt-3 me-2 opacity-25"><i class="fa-solid ' + st.i + ' fa-2x"></i></div><div class="card-body p-3 position-relative z-1"><p class="fw-medium mb-1 opacity-75 small">' + st.l + '</p><h3 class="fw-bold mb-2">' + st.v + '</h3><div class="progress" style="height: 4px; background-color: rgba(255,255,255,0.3);"><div class="progress-bar ' + st.c + '" role="progressbar" style="width: ' + st.pct + '%"></div></div><p class="mb-0 mt-2 opacity-75" style="font-size:0.65rem;">' + st.pct + '% dari total</p></div></div></div>';
       });
       html += '</div>';
 
@@ -2247,15 +2485,15 @@
       // Baris 3: Grafik Permohonan Berdasarkan Layanan & Grafik Permohonan Harian
       html += '<div class="row g-4 mt-1">';
 
-      html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-bar text-primary me-2"></i>Grafik Permohonan Berdasarkan Layanan (Year to Date)</h5></div><div class="card-body" style="position: relative; height: 320px;"><canvas id="chartLayananYTD"></canvas></div></div></div>';
+      html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-bar text-primary me-2"></i>Grafik Permohonan Berdasarkan Layanan (Year to Date)</h5></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartLayananYTD"></canvas></div></div></div>';
 
-      html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-line text-success me-2"></i>Grafik Permohonan Harian (Month to Date)</h5></div><div class="card-body" style="position: relative; height: 320px;"><canvas id="chartPermohonanHarian"></canvas></div></div></div>';
+      html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-line text-success me-2"></i>Grafik Permohonan Harian (Month to Date)</h5></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartPermohonanHarian"></canvas></div></div></div>';
 
       html += '</div>';
 
       // Baris 3b: Grafik Kepatuhan SLA
       html += '<div class="row g-4 mt-1">';
-      html += '<div class="col-12"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-gauge-high text-danger me-2"></i>Grafik Kepatuhan SLA per Bulan</h5></div><div class="card-body" style="position: relative; height: 320px;"><canvas id="chartSLACompliance"></canvas></div></div></div>';
+      html += '<div class="col-12"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-gauge-high text-danger me-2"></i>Grafik Kepatuhan SLA per Bulan</h5></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartSLACompliance"></canvas></div></div></div>';
       html += '</div>';
 
       // Baris 4: Pemohon Teraktif & Panduan Singkat
@@ -2662,6 +2900,16 @@
       }
     }
 
+    function toggleFilterCollapse() {
+      var body = document.getElementById('filterCollapseBody');
+      if (body) {
+        body.classList.toggle('show');
+        document.getElementById('filterToggleBtn').innerHTML = body.classList.contains('show')
+          ? '<i class="fa-solid fa-chevron-up"></i>'
+          : '<i class="fa-solid fa-sliders"></i>';
+      }
+    }
+
     function resetTicketFilters() {
       var ids = ['filterSearch', 'filterStatus', 'filterUnit', 'filterSubLayanan', 'filterBulan', 'filterDateFrom', 'filterDateTo', 'filterSla'];
       ids.forEach(function (id) {
@@ -2751,6 +2999,37 @@
           <td class="align-top py-4 text-muted small text-nowrap"><i class="fa-regular fa-calendar me-1 opacity-50"></i>${safeDate(t.created_at)}</td>
           <td class="align-top py-4 text-end pe-4 text-nowrap">${act}</td></tr>`;
       }).join('');
+
+      // Mobile cards rendering
+      var cardsCont = document.getElementById('ticketingCardsContainer');
+      if (cardsCont) {
+        if (!listToRender.length) {
+          cardsCont.innerHTML = '<div class="text-center py-5 text-muted"><i class="fa-solid fa-ticket fa-2x d-block mb-2 opacity-25"></i>Belum ada tiket</div>';
+        } else {
+          cardsCont.innerHTML = listToRender.map(t => {
+            var initial = t.nama ? String(t.nama).charAt(0).toUpperCase() : '?';
+            var layananText = t.kategori + (t.sub_layanan ? ' &bull; ' + t.sub_layanan : '');
+            return '<div class="ticket-card-item" onclick="showTicketCustomDetail(\'' + t.ticket_id + '\')">' +
+              '<div class="d-flex justify-content-between align-items-start mb-2">' +
+                '<div class="d-flex align-items-center gap-2">' +
+                  '<div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;font-size:0.9rem;">' + initial + '</div>' +
+                  '<div><div class="fw-bold text-dark" style="font-size:0.9rem;">' + t.nama + '</div>' +
+                  '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle font-monospace" style="font-size:0.65rem;">' + t.ticket_id + '</span></div></div>' +
+                getStatusBadge(t.status) +
+              '</div>' +
+              '<div class="small text-muted mb-2"><i class="fa-solid fa-tag text-primary opacity-75 me-1" style="font-size:0.7rem;"></i>' + layananText + '</div>' +
+              '<div class="d-flex justify-content-between align-items-center">' +
+                '<small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>' + safeDate(t.created_at) + '</small>' +
+                '<div class="dropdown"><button class="btn btn-sm btn-light border rounded-circle" style="width:32px;height:32px;" data-bs-toggle="dropdown"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
+                '<ul class="dropdown-menu shadow border-0"><li><h6 class="dropdown-header">Ubah Status</h6></li>' +
+                ['Open', 'On Proses', 'Pending', 'Solved', 'Reject'].map(function(st) {
+                  return '<li><a class="dropdown-item" href="#" onclick="event.stopPropagation();handleStatusChange(\'' + t.id + '\',\'' + st + '\')">Set ' + st + '</a></li>';
+                }).join('') + '</ul></div>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
     }
 
     function renderCategories() {
