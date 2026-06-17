@@ -108,7 +108,7 @@
         </div>
 
         <!-- Tombol Kembali ke Portal -->
-        <a href="<?= execUrl ?>" id="btnBackToPortal" target="_top" class="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-3 sm:px-4 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 text-xs font-bold no-underline">
+        <a href="javascript:void(0)" id="btnBackToPortal" target="_top" class="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-3 sm:px-4 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 text-xs font-bold no-underline">
           <i class="fas fa-arrow-left text-[10px]"></i>
           <span class="hidden sm:inline">Kembali ke Portal</span>
           <span class="inline sm:hidden">Kembali</span>
@@ -899,32 +899,34 @@
       resetAutoSlideTimer();
     }
 
-    // Adjust Kembali ke Portal link dynamically based on dev vs exec mode
+    // Adjust Kembali ke Portal link to go back to Index
     function adjustBackToPortalLink() {
-      let portalUrl = "<?= execUrl ?>";
+      try {
+        var portalUrl = window.location.href;
 
-      if (portalUrl) {
-        try {
-          const parsedUrl = new URL(portalUrl);
-          parsedUrl.searchParams.delete('view');
-          portalUrl = parsedUrl.toString();
-        } catch (e) {}
-      }
+        // Strip view=display parameter
+        var parsedUrl = new URL(portalUrl);
+        parsedUrl.searchParams.delete('view');
+        portalUrl = parsedUrl.toString();
 
-      if (!portalUrl) {
-        portalUrl = window.location.href;
-      }
+        // Ensure correct /exec or /dev mode
+        var isDevMode = window.location.href.indexOf('/dev') !== -1;
+        if (isDevMode && portalUrl.indexOf('/exec') !== -1) {
+          portalUrl = portalUrl.replace('/exec', '/dev');
+        } else if (!isDevMode && portalUrl.indexOf('/dev') !== -1) {
+          portalUrl = portalUrl.replace('/dev', '/exec');
+        }
 
-      const isDevMode = window.location.href.indexOf('/dev') !== -1;
-      if (isDevMode && portalUrl.indexOf('/exec') !== -1) {
-        portalUrl = portalUrl.replace('/exec', '/dev');
-      } else if (!isDevMode && portalUrl.indexOf('/dev') !== -1) {
-        portalUrl = portalUrl.replace('/dev', '/exec');
-      }
-
-      const backBtn = document.getElementById('btnBackToPortal');
-      if (backBtn) {
-        backBtn.href = portalUrl;
+        var backBtn = document.getElementById('btnBackToPortal');
+        if (backBtn) {
+          backBtn.href = portalUrl;
+        }
+      } catch (e) {
+        // Fallback: navigate to base URL
+        var backBtn = document.getElementById('btnBackToPortal');
+        if (backBtn) {
+          backBtn.href = window.location.href.split('?')[0];
+        }
       }
     }
 

@@ -96,7 +96,7 @@
     .nav-item-custom {
       display: flex;
       align-items: center;
-      padding: 0.8rem 1.2rem;
+      padding: 12px 16px;
       color: #64748b;
       border-radius: 8px;
       margin-bottom: 0.5rem;
@@ -104,6 +104,7 @@
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
+      min-height: 48px;
     }
 
     .nav-item-custom:hover,
@@ -165,6 +166,16 @@
     .bg-status-solved {
       background: #dcfce7;
       color: #16a34a;
+    }
+
+    .bg-status-proses {
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    .bg-status-reject {
+      background: #fee2e2;
+      color: #dc2626;
     }
 
     .placeholder-glow .placeholder {
@@ -857,12 +868,6 @@
         border-radius: 0;
         min-height: 100vh;
       }
-    }
-
-    /* Sidebar nav item: larger tap */
-    .nav-item-custom {
-      padding: 12px 16px;
-      min-height: 48px;
     }
 
     /* Better spacing for mobile tables */
@@ -1960,6 +1965,8 @@
     var chartLayananInstance = null;
     var chartHarianInstance = null;
     var chartSLAInstance = null;
+    var layananViewMode = 'monthly';
+    var slaViewMode = 'monthly';
     var fieldUploadFiles = {}; // Penampung file per-field dinamis
 
     // --- SESSION TOKEN & AUTO-LOGOUT ---
@@ -2345,10 +2352,10 @@
     function getStatusBadge(s) {
       var badges = {
         'open': '<span class="badge badge-status bg-status-open"><i class="fa-regular fa-circle-dot me-1"></i>Open</span>',
-        'on proses': '<span class="badge badge-status" style="background:#e0f2fe;color:#0284c7;"><i class="fa-solid fa-spinner fa-spin me-1"></i>On Proses</span>',
+        'on proses': '<span class="badge badge-status bg-status-proses"><i class="fa-solid fa-spinner fa-spin me-1"></i>On Proses</span>',
         'pending': '<span class="badge badge-status bg-status-pending"><i class="fa-regular fa-clock me-1"></i>Pending</span>',
         'solved': '<span class="badge badge-status bg-status-solved"><i class="fa-solid fa-check me-1"></i>Solved</span>',
-        'reject': '<span class="badge badge-status" style="background:#fee2e2;color:#dc2626;"><i class="fa-solid fa-xmark me-1"></i>Reject</span>'
+        'reject': '<span class="badge badge-status bg-status-reject"><i class="fa-solid fa-xmark me-1"></i>Reject</span>'
       };
       return badges[String(s).toLowerCase()] || '<span class="badge bg-secondary">' + s + '</span>';
     }
@@ -2485,7 +2492,7 @@
       // Baris 3: Grafik Permohonan Berdasarkan Layanan & Grafik Permohonan Harian
       html += '<div class="row g-4 mt-1">';
 
-      html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-bar text-primary me-2"></i>Grafik Permohonan Berdasarkan Layanan (Year to Date)</h5></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartLayananYTD"></canvas></div></div></div>';
+      html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-bar text-primary me-2"></i>Grafik Permohonan Berdasarkan Layanan</h5><div class="btn-group btn-group-sm"><button class="btn btn-outline-primary ' + (layananViewMode === 'monthly' ? 'active' : '') + '" onclick="setLayananMode(\'monthly\')">Bulanan</button><button class="btn btn-outline-primary ' + (layananViewMode === 'yearly' ? 'active' : '') + '" onclick="setLayananMode(\'yearly\')">Tahunan</button></div></div></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartLayananYTD"></canvas></div></div></div>';
 
       html += '<div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-line text-success me-2"></i>Grafik Permohonan Harian (Month to Date)</h5></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartPermohonanHarian"></canvas></div></div></div>';
 
@@ -2493,7 +2500,7 @@
 
       // Baris 3b: Grafik Kepatuhan SLA
       html += '<div class="row g-4 mt-1">';
-      html += '<div class="col-12"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white border-0 pt-4 pb-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-gauge-high text-danger me-2"></i>Grafik Kepatuhan SLA per Bulan</h5></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartSLACompliance"></canvas></div></div></div>';
+      html += '<div class="col-12"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white border-0 pt-4 pb-2"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-gauge-high text-danger me-2"></i>Grafik Kepatuhan SLA</h5><div class="btn-group btn-group-sm"><button class="btn btn-outline-danger ' + (slaViewMode === 'monthly' ? 'active' : '') + '" onclick="setSlaMode(\'monthly\')">Bulanan</button><button class="btn btn-outline-danger ' + (slaViewMode === 'yearly' ? 'active' : '') + '" onclick="setSlaMode(\'yearly\')">Tahunan</button></div></div></div><div class="card-body chart-wrapper" style="position: relative; height: 320px;"><canvas id="chartSLACompliance"></canvas></div></div></div>';
       html += '</div>';
 
       // Baris 4: Pemohon Teraktif & Panduan Singkat
@@ -2527,68 +2534,12 @@
         chartSLAInstance = null;
       }
 
-      // --- DATA PREPARATION FOR CHART 1: STACKED BAR YTD ---
-      var categories = [...new Set(dbTickets.map(t => t.kategori).filter(Boolean))].sort();
-      if (categories.length === 0) categories = ['IT Support', 'General Affair', 'Humas'];
-
-      var monthsMap = {};
-      dbTickets.forEach(t => {
-        if (t.created_at) {
-          var yyyymm = String(t.created_at).substring(0, 7);
-          monthsMap[yyyymm] = true;
-        }
-      });
-      var sortedMonths = Object.keys(monthsMap).sort();
-      if (sortedMonths.length === 0) {
-        var today = new Date();
-        for (var i = 2; i >= 0; i--) {
-          var d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-          var ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-          sortedMonths.push(ym);
-        }
-      }
-
-      var chartDataByMonth = {};
-      sortedMonths.forEach(m => {
-        chartDataByMonth[m] = {};
-        categories.forEach(cat => {
-          chartDataByMonth[m][cat] = 0;
-        });
-      });
-
-      dbTickets.forEach(t => {
-        if (t.created_at && t.kategori) {
-          var yyyymm = String(t.created_at).substring(0, 7);
-          if (chartDataByMonth[yyyymm] && chartDataByMonth[yyyymm][t.kategori] !== undefined) {
-            chartDataByMonth[yyyymm][t.kategori]++;
-          }
-        }
-      });
-
-      var colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
-      var datasets = categories.map((cat, idx) => {
-        return {
-          label: cat,
-          data: sortedMonths.map(m => chartDataByMonth[m][cat]),
-          backgroundColor: colors[idx % colors.length],
-          hoverBackgroundColor: colors[idx % colors.length],
-          barThickness: 24
-        };
-      });
-
-      var monthNamesIndo = {
-        '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun',
-        '07': 'Jul', '08': 'Ags', '09': 'Sep', '10': 'Okt', '11': 'Nov', '12': 'Des'
-      };
-      var monthLabels = sortedMonths.map(m => {
-        var parts = m.split('-');
-        return (monthNamesIndo[parts[1]] || parts[1]) + '-' + parts[0];
-      });
-
-      // --- DATA PREPARATION FOR CHART 2: DAILY LINE MTD ---
+      // --- CHART 2: DAILY LINE MTD (unchanged) ---
       var last7Days = [];
       var last7DaysYMD = [];
       var todayDate = new Date();
+      var categories = [...new Set(dbTickets.map(t => t.kategori).filter(Boolean))].sort();
+      if (categories.length === 0) categories = ['IT Support', 'General Affair', 'Humas'];
       for (var i = 6; i >= 0; i--) {
         var d = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - i);
         var dayStr = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
@@ -2614,12 +2565,13 @@
         }
       });
 
+      var colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
       var lineDatasets = categories.map((cat, idx) => {
         return {
           label: cat,
           data: last7DaysYMD.map(ymd => harianData[ymd][cat]),
           borderColor: colors[idx % colors.length],
-          backgroundColor: colors[idx % colors.length] + '11', // semi-transparent fill
+          backgroundColor: colors[idx % colors.length] + '11',
           tension: 0.3,
           borderWidth: 2,
           pointRadius: 4,
@@ -2628,74 +2580,11 @@
         };
       });
 
-      // --- CHART INITIALIZATION ---
-      var chartLayananPlugin = {
-        id: 'ytdLabels',
-        afterDatasetsDraw(chart) {
-          const { ctx, data } = chart;
-          ctx.save();
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillStyle = '#4b5563';
-
-          const meta = chart.getDatasetMeta(0);
-          const length = meta.data.length;
-
-          for (let i = 0; i < length; i++) {
-            let total = 0;
-            data.datasets.forEach(dataset => {
-              total += (dataset.data[i] || 0);
-            });
-
-            let rightmost = 0;
-            data.datasets.forEach((dataset, datasetIndex) => {
-              const barMeta = chart.getDatasetMeta(datasetIndex);
-              if (barMeta.data[i]) {
-                const xPos = barMeta.data[i].x;
-                if (xPos > rightmost) {
-                  rightmost = xPos;
-                }
-              }
-            });
-
-            const yPos = meta.data[i].y;
-            ctx.fillText('Total: ' + total + ' Tiket', rightmost + 8, yPos + 4);
-          }
-          ctx.restore();
-        }
-      };
-
-      var ctxLayanan = document.getElementById('chartLayananYTD')?.getContext('2d');
-      if (ctxLayanan) {
-        chartLayananInstance = new Chart(ctxLayanan, {
-          type: 'bar',
-          data: {
-            labels: monthLabels,
-            datasets: datasets
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { stacked: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0 } },
-              y: { stacked: true, grid: { display: false } }
-            },
-            plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
-            }
-          },
-          plugins: [chartLayananPlugin]
-        });
-      }
-
       var ctxHarian = document.getElementById('chartPermohonanHarian')?.getContext('2d');
       if (ctxHarian) {
         chartHarianInstance = new Chart(ctxHarian, {
           type: 'line',
-          data: {
-            labels: last7Days,
-            datasets: lineDatasets
-          },
+          data: { labels: last7Days, datasets: lineDatasets },
           options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -2710,90 +2599,342 @@
         });
       }
 
-      // --- SLA COMPLIANCE CHART: STACKED BAR (On Time / Warning / Overdue per Month) ---
-      var slaMonths = {};
-      dbTickets.forEach(function (tk) {
-        if (tk.created_at) {
-          var ym = String(tk.created_at).substring(0, 7);
-          slaMonths[ym] = true;
+      renderLayananChart(layananViewMode);
+      renderSLAChart(slaViewMode);
+    }
+
+    function renderLayananChart(mode) {
+      if (chartLayananInstance) { chartLayananInstance.destroy(); chartLayananInstance = null; }
+
+      var categories = [...new Set(dbTickets.map(t => t.kategori).filter(Boolean))].sort();
+      if (categories.length === 0) categories = ['IT Support', 'General Affair', 'Humas'];
+      var colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
+
+      if (mode === 'yearly') {
+        var yearsMap = {};
+        dbTickets.forEach(t => {
+          if (t.created_at) {
+            var y = String(t.created_at).substring(0, 4);
+            yearsMap[y] = true;
+          }
+        });
+        var sortedYears = Object.keys(yearsMap).sort();
+        if (sortedYears.length === 0) sortedYears = [String(new Date().getFullYear())];
+
+        var chartDataByYear = {};
+        sortedYears.forEach(y => {
+          chartDataByYear[y] = {};
+          categories.forEach(cat => { chartDataByYear[y][cat] = 0; });
+        });
+
+        dbTickets.forEach(t => {
+          if (t.created_at && t.kategori) {
+            var y = String(t.created_at).substring(0, 4);
+            if (chartDataByYear[y] && chartDataByYear[y][t.kategori] !== undefined) {
+              chartDataByYear[y][t.kategori]++;
+            }
+          }
+        });
+
+        var datasets = categories.map((cat, idx) => ({
+          label: cat,
+          data: sortedYears.map(y => chartDataByYear[y][cat]),
+          backgroundColor: colors[idx % colors.length],
+          hoverBackgroundColor: colors[idx % colors.length],
+          barThickness: 24
+        }));
+
+        var ctx = document.getElementById('chartLayananYTD')?.getContext('2d');
+        if (ctx) {
+          chartLayananInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: sortedYears, datasets: datasets },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { stacked: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0 } },
+                y: { stacked: true, grid: { display: false } }
+              },
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+              }
+            }
+          });
         }
-      });
-      var slaMonthList = Object.keys(slaMonths).sort();
-      if (slaMonthList.length === 0) {
-        var td = new Date();
-        for (var si = 2; si >= 0; si--) {
-          var sd = new Date(td.getFullYear(), td.getMonth() - si, 1);
-          slaMonthList.push(sd.getFullYear() + '-' + String(sd.getMonth() + 1).padStart(2, '0'));
+      } else {
+        var monthsMap = {};
+        dbTickets.forEach(t => {
+          if (t.created_at) {
+            var yyyymm = String(t.created_at).substring(0, 7);
+            monthsMap[yyyymm] = true;
+          }
+        });
+        var sortedMonths = Object.keys(monthsMap).sort();
+        if (sortedMonths.length === 0) {
+          var today = new Date();
+          for (var i = 2; i >= 0; i--) {
+            var d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            var ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            sortedMonths.push(ym);
+          }
+        }
+
+        var chartDataByMonth = {};
+        sortedMonths.forEach(m => {
+          chartDataByMonth[m] = {};
+          categories.forEach(cat => { chartDataByMonth[m][cat] = 0; });
+        });
+
+        dbTickets.forEach(t => {
+          if (t.created_at && t.kategori) {
+            var yyyymm = String(t.created_at).substring(0, 7);
+            if (chartDataByMonth[yyyymm] && chartDataByMonth[yyyymm][t.kategori] !== undefined) {
+              chartDataByMonth[yyyymm][t.kategori]++;
+            }
+          }
+        });
+
+        var datasets = categories.map((cat, idx) => ({
+          label: cat,
+          data: sortedMonths.map(m => chartDataByMonth[m][cat]),
+          backgroundColor: colors[idx % colors.length],
+          hoverBackgroundColor: colors[idx % colors.length],
+          barThickness: 24
+        }));
+
+        var monthNamesIndo = {
+          '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun',
+          '07': 'Jul', '08': 'Ags', '09': 'Sep', '10': 'Okt', '11': 'Nov', '12': 'Des'
+        };
+        var monthLabels = sortedMonths.map(m => {
+          var parts = m.split('-');
+          return (monthNamesIndo[parts[1]] || parts[1]) + '-' + parts[0];
+        });
+
+        var chartLayananPlugin = {
+          id: 'ytdLabels',
+          afterDatasetsDraw(chart) {
+            const { ctx, data } = chart;
+            ctx.save();
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = '#4b5563';
+            const meta = chart.getDatasetMeta(0);
+            const length = meta.data.length;
+            for (let i = 0; i < length; i++) {
+              let total = 0;
+              data.datasets.forEach(dataset => { total += (dataset.data[i] || 0); });
+              let rightmost = 0;
+              data.datasets.forEach((dataset, datasetIndex) => {
+                const barMeta = chart.getDatasetMeta(datasetIndex);
+                if (barMeta.data[i]) {
+                  const xPos = barMeta.data[i].x;
+                  if (xPos > rightmost) rightmost = xPos;
+                }
+              });
+              const yPos = meta.data[i].y;
+              ctx.fillText('Total: ' + total + ' Tiket', rightmost + 8, yPos + 4);
+            }
+            ctx.restore();
+          }
+        };
+
+        var ctx = document.getElementById('chartLayananYTD')?.getContext('2d');
+        if (ctx) {
+          chartLayananInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: monthLabels, datasets: datasets },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { stacked: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0 } },
+                y: { stacked: true, grid: { display: false } }
+              },
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+              }
+            },
+            plugins: [chartLayananPlugin]
+          });
         }
       }
+    }
+
+    function renderSLAChart(mode) {
+      if (chartSLAInstance) { chartSLAInstance.destroy(); chartSLAInstance = null; }
 
       var slaToday = new Date();
-      var slaMonthData = {};
-      slaMonthList.forEach(function (m) { slaMonthData[m] = { ontime: 0, warning: 0, overdue: 0 }; });
 
-      dbTickets.forEach(function (tk) {
-        if (!tk.created_at) return;
-        var ym = String(tk.created_at).substring(0, 7);
-        if (!slaMonthData[ym]) return;
-
-        var st = (tk.status || '').toLowerCase();
-        if (st === 'solved' || st === 'reject' || st === 'batal') {
-          slaMonthData[ym].ontime++;
-          return;
-        }
-        if (tk.sla_deadline) {
-          var dl = new Date(tk.sla_deadline);
-          var diff = (dl - slaToday) / (1000 * 60 * 60 * 24);
-          if (diff < 0) {
-            slaMonthData[ym].overdue++;
-          } else if (diff <= 1) {
-            slaMonthData[ym].warning++;
-          } else {
-            slaMonthData[ym].ontime++;
+      if (mode === 'yearly') {
+        var yearsMap = {};
+        dbTickets.forEach(function (tk) {
+          if (tk.created_at) {
+            var y = String(tk.created_at).substring(0, 4);
+            yearsMap[y] = true;
           }
-        } else {
-          slaMonthData[ym].ontime++;
-        }
-      });
+        });
+        var sortedYears = Object.keys(yearsMap).sort();
+        if (sortedYears.length === 0) sortedYears = [String(new Date().getFullYear())];
 
-      var slaLabels = slaMonthList.map(function (m) {
-        var parts = m.split('-');
-        var monthNames = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun', '07': 'Jul', '08': 'Ags', '09': 'Sep', '10': 'Okt', '11': 'Nov', '12': 'Des' };
-        return (monthNames[parts[1]] || parts[1]) + '-' + parts[0];
-      });
+        var slaYearData = {};
+        sortedYears.forEach(function (y) { slaYearData[y] = { ontime: 0, warning: 0, overdue: 0 }; });
 
-      var slaDatasets = [
-        { label: 'On Time', data: slaMonthList.map(function (m) { return slaMonthData[m].ontime; }), backgroundColor: '#10b981' },
-        { label: 'Warning', data: slaMonthList.map(function (m) { return slaMonthData[m].warning; }), backgroundColor: '#f59e0b' },
-        { label: 'Overdue', data: slaMonthList.map(function (m) { return slaMonthData[m].overdue; }), backgroundColor: '#ef4444' }
-      ];
+        dbTickets.forEach(function (tk) {
+          if (!tk.created_at) return;
+          var y = String(tk.created_at).substring(0, 4);
+          if (!slaYearData[y]) return;
 
-      var ctxSLA = document.getElementById('chartSLACompliance')?.getContext('2d');
-      if (ctxSLA) {
-        chartSLAInstance = new Chart(ctxSLA, {
-          type: 'bar',
-          data: { labels: slaLabels, datasets: slaDatasets },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { stacked: true, grid: { display: false } },
-              y: { stacked: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0, beginAtZero: true } }
-            },
-            plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
-              tooltip: {
-                callbacks: {
-                  footer: function (items) {
-                    var total = 0;
-                    items.forEach(function (it) { total += it.parsed.y || 0; });
-                    return 'Total: ' + total + ' tiket';
+          var st = (tk.status || '').toLowerCase();
+          if (st === 'solved' || st === 'reject' || st === 'batal') {
+            slaYearData[y].ontime++;
+            return;
+          }
+          if (tk.sla_deadline) {
+            var dl = new Date(tk.sla_deadline);
+            var diff = (dl - slaToday) / (1000 * 60 * 60 * 24);
+            if (diff < 0) slaYearData[y].overdue++;
+            else if (diff <= 1) slaYearData[y].warning++;
+            else slaYearData[y].ontime++;
+          } else {
+            slaYearData[y].ontime++;
+          }
+        });
+
+        var slaDatasets = [
+          { label: 'On Time', data: sortedYears.map(function (y) { return slaYearData[y].ontime; }), backgroundColor: '#10b981' },
+          { label: 'Warning', data: sortedYears.map(function (y) { return slaYearData[y].warning; }), backgroundColor: '#f59e0b' },
+          { label: 'Overdue', data: sortedYears.map(function (y) { return slaYearData[y].overdue; }), backgroundColor: '#ef4444' }
+        ];
+
+        var ctx = document.getElementById('chartSLACompliance')?.getContext('2d');
+        if (ctx) {
+          chartSLAInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: sortedYears, datasets: slaDatasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0, beginAtZero: true } }
+              },
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                tooltip: {
+                  callbacks: {
+                    footer: function (items) {
+                      var total = 0;
+                      items.forEach(function (it) { total += it.parsed.y || 0; });
+                      return 'Total: ' + total + ' tiket';
+                    }
                   }
                 }
               }
             }
+          });
+        }
+      } else {
+        var monthsMap = {};
+        dbTickets.forEach(function (tk) {
+          if (tk.created_at) {
+            var ym = String(tk.created_at).substring(0, 7);
+            monthsMap[ym] = true;
           }
         });
+        var monthList = Object.keys(monthsMap).sort();
+        if (monthList.length === 0) {
+          var td = new Date();
+          for (var si = 2; si >= 0; si--) {
+            var sd = new Date(td.getFullYear(), td.getMonth() - si, 1);
+            monthList.push(sd.getFullYear() + '-' + String(sd.getMonth() + 1).padStart(2, '0'));
+          }
+        }
+
+        var slaMonthData = {};
+        monthList.forEach(function (m) { slaMonthData[m] = { ontime: 0, warning: 0, overdue: 0 }; });
+
+        dbTickets.forEach(function (tk) {
+          if (!tk.created_at) return;
+          var ym = String(tk.created_at).substring(0, 7);
+          if (!slaMonthData[ym]) return;
+          var st = (tk.status || '').toLowerCase();
+          if (st === 'solved' || st === 'reject' || st === 'batal') {
+            slaMonthData[ym].ontime++;
+            return;
+          }
+          if (tk.sla_deadline) {
+            var dl = new Date(tk.sla_deadline);
+            var diff = (dl - slaToday) / (1000 * 60 * 60 * 24);
+            if (diff < 0) slaMonthData[ym].overdue++;
+            else if (diff <= 1) slaMonthData[ym].warning++;
+            else slaMonthData[ym].ontime++;
+          } else {
+            slaMonthData[ym].ontime++;
+          }
+        });
+
+        var monthNames = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun', '07': 'Jul', '08': 'Ags', '09': 'Sep', '10': 'Okt', '11': 'Nov', '12': 'Des' };
+        var slaLabels = monthList.map(function (m) {
+          var parts = m.split('-');
+          return (monthNames[parts[1]] || parts[1]) + '-' + parts[0];
+        });
+
+        var slaDatasets = [
+          { label: 'On Time', data: monthList.map(function (m) { return slaMonthData[m].ontime; }), backgroundColor: '#10b981' },
+          { label: 'Warning', data: monthList.map(function (m) { return slaMonthData[m].warning; }), backgroundColor: '#f59e0b' },
+          { label: 'Overdue', data: monthList.map(function (m) { return slaMonthData[m].overdue; }), backgroundColor: '#ef4444' }
+        ];
+
+        var ctx = document.getElementById('chartSLACompliance')?.getContext('2d');
+        if (ctx) {
+          chartSLAInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: slaLabels, datasets: slaDatasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0, beginAtZero: true } }
+              },
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                tooltip: {
+                  callbacks: {
+                    footer: function (items) {
+                      var total = 0;
+                      items.forEach(function (it) { total += it.parsed.y || 0; });
+                      return 'Total: ' + total + ' tiket';
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    function setLayananMode(mode) {
+      layananViewMode = mode;
+      renderLayananChart(mode);
+      var btns = document.querySelectorAll('.card-header .btn-outline-primary');
+      if (btns.length >= 2) {
+        btns[0].classList.toggle('active', mode === 'monthly');
+        btns[1].classList.toggle('active', mode === 'yearly');
+      }
+    }
+
+    function setSlaMode(mode) {
+      slaViewMode = mode;
+      renderSLAChart(mode);
+      var btns = document.querySelectorAll('.card-header .btn-outline-danger');
+      if (btns.length >= 2) {
+        btns[0].classList.toggle('active', mode === 'monthly');
+        btns[1].classList.toggle('active', mode === 'yearly');
       }
     }
 
